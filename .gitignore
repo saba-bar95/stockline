@@ -14,6 +14,8 @@ dist-ssr
 data/
 *.sqlite
 *.sqlite-*
+scripts/export/
+scripts/excel_preview.json
 
 # Editor directories and files
 .vscode/*
