@@ -1,111 +1,282 @@
+@import '@picocss/pico/css/pico.min.css';
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap');
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --font-family: 'Manrope', system-ui, sans-serif;
+  --pico-font-family: var(--font-family);
+  --pico-background-color: #f3efe6;
+  --pico-color: #1c2420;
+  --pico-primary: #1f6f54;
+  --pico-primary-hover: #185a44;
+  --pico-primary-inverse: #f7f3ea;
+  --pico-secondary: #3d4a43;
+  --pico-muted-border-color: #d9d2c4;
+  --pico-card-background-color: rgba(255, 252, 246, 0.88);
+  --pico-card-sectioning-background-color: rgba(255, 252, 246, 0.95);
+  --pico-form-element-background-color: #fffdf8;
+  --pico-form-element-border-color: #cfc6b6;
+  --ink: #14201b;
+  --moss: #1f6f54;
+  --moss-deep: #0f3d2e;
+  --sand: #f3efe6;
+  --paper: #fffdf8;
+  --ember: #c45c26;
+  --shadow: 0 18px 50px rgba(20, 32, 27, 0.12);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(31, 111, 84, 0.18), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(196, 92, 38, 0.12), transparent 50%),
+    linear-gradient(180deg, #ebe4d6 0%, var(--sand) 40%, #e7e1d4 100%);
+  background-attachment: fixed;
+  font-family: var(--font-family);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+  z-index: 0;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+#root {
+  position: relative;
+  z-index: 1;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
+
+.brand {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-size: 1.55rem;
+  color: var(--moss-deep);
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+.brand span {
+  color: var(--ember);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.25rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.25rem;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  background: linear-gradient(165deg, rgba(15, 61, 46, 0.96), rgba(28, 58, 48, 0.92));
+  color: #f4f0e6;
+  border-radius: 1.25rem;
+  padding: 1.25rem 1rem;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 1rem;
+  height: fit-content;
+}
+
+.sidebar .brand {
+  color: #f7f3ea;
+  margin-bottom: 0.25rem;
+}
+
+.sidebar .tagline {
+  opacity: 0.72;
+  font-size: 0.85rem;
+  margin: 0 0 1.25rem;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar a {
+  color: #e8e2d6;
+  text-decoration: none;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
+}
+
+.sidebar a.active {
+  background: rgba(196, 92, 38, 0.9);
+  color: #fff;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hero-panel {
+  background: var(--pico-card-background-color);
+  border: 1px solid rgba(217, 210, 196, 0.9);
+  border-radius: 1.25rem;
+  padding: 1.35rem 1.5rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  animation: rise 0.45s ease both;
+}
+
+.hero-panel h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.03em;
+}
+
+.hero-panel p {
+  margin: 0;
+  color: #4a564f;
+  max-width: 52ch;
+}
+
+.panel {
+  background: var(--pico-card-background-color);
+  border: 1px solid rgba(217, 210, 196, 0.9);
+  border-radius: 1.1rem;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 10px 30px rgba(20, 32, 27, 0.08);
+  animation: rise 0.5s ease both;
+}
+
+.panel h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.2rem;
+  margin: 0 0 0.85rem;
+}
+
+.grid-kpi {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+@media (max-width: 800px) {
+  .grid-kpi {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi {
+  border-radius: 1rem;
+  padding: 1rem;
+  background: linear-gradient(145deg, #fffdf8, #f2ebe0);
+  border: 1px solid #ddd4c4;
+}
+
+.kpi .label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #667069;
+  margin-bottom: 0.35rem;
+}
+
+.kpi .value {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.55rem;
+  color: var(--moss-deep);
+}
+
+.kpi .muted {
+  font-size: 0.85rem;
+  color: #667069;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  --pico-font-size: 0.92rem;
+}
+
+table thead th {
+  background: rgba(31, 111, 84, 0.08);
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.row-actions > * {
+  margin-bottom: 0;
+}
+
+dialog article {
+  border-radius: 1rem;
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  background: var(--moss-deep);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  z-index: 50;
+  animation: rise 0.25s ease both;
+}
+
+.toast.error {
+  background: #8a2e1f;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty {
+  color: #667069;
+  font-style: italic;
 }
