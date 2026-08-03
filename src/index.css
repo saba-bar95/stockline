@@ -7,8 +7,8 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-family: var(--font-sans);
   --pico-font-family: var(--font-sans);
-  --pico-font-size: 14px;
-  --pico-line-height: 1.4;
+  --pico-font-size: 13px;
+  --pico-line-height: 1.35;
   --pico-background-color: #f6f3ec;
   --pico-color: #1a221e;
   --pico-primary: #1f6f54;
@@ -19,10 +19,10 @@
   --pico-card-background-color: rgba(255, 252, 246, 0.92);
   --pico-form-element-background-color: #fffdf8;
   --pico-form-element-border-color: #c9c0b0;
-  --pico-spacing: 0.65rem;
-  --pico-typography-spacing-vertical: 0.7rem;
-  --pico-form-element-spacing-vertical: 0.45rem;
-  --pico-form-element-spacing-horizontal: 0.65rem;
+  --pico-spacing: 0.55rem;
+  --pico-typography-spacing-vertical: 0.55rem;
+  --pico-form-element-spacing-vertical: 0.35rem;
+  --pico-form-element-spacing-horizontal: 0.55rem;
   --ink: #14201b;
   --moss: #1f6f54;
   --moss-deep: #0f3d2e;
