@@ -24,7 +24,15 @@ npm run dev
 
 ინგრედიენტები · შესყიდული · პროდუქცია · რეცეპტები · შესყიდვები · წარმოება · გაყიდვები · ჩამოწერა · HR/ხელფასი · ზედნადები · მოგება-ზარალი
 
-## Neon later
+## Excel sync
+
+```bash
+npm run excel:sync
+```
+
+Reads `Desktop/mza (1).xlsm` → `scripts/export/*.json` → SQLite.
+
+**Number parity:** source rows (purchases, production, sales…) are imported 1:1. Computed fields are **not always identical** to Excel yet — Excel’s product unit cost is a production-weighted average **plus overhead allocation**; the app currently shows live recipe × current ingredient averages (OH allocation exists in P&L/daily pool, not yet fully on every product row).
 
 1. Create a Neon project  
 2. Swap SQLite driver for `drizzle-orm/neon-http`  

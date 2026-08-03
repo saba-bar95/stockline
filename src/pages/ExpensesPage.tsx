@@ -62,7 +62,7 @@ export function ExpensesPage() {
             <label>
               ტიპი
               <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option>იჯარა</option>
+                <option>ქირა</option>
                 <option>კომუნალური</option>
                 <option>სხვა</option>
               </select>

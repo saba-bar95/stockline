@@ -142,7 +142,7 @@ export function dailyPool(date: string): number {
       .where(
         and(
           eq(expenses.date, date),
-          sql`${expenses.type} NOT IN ('იჯარა', 'კომუნალური')`,
+          sql`${expenses.type} NOT IN ('იჯარა', 'ქირა', 'კომუნალური')`,
         ),
       )
       .get()?.a ?? 0
@@ -156,7 +156,7 @@ export function dailyPool(date: string): number {
         and(
           gte(expenses.date, start),
           lt(expenses.date, end),
-          sql`${expenses.type} IN ('იჯარა', 'კომუნალური')`,
+          sql`${expenses.type} IN ('იჯარა', 'ქირა', 'კომუნალური')`,
         ),
       )
       .get()?.a ?? 0

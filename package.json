@@ -11,6 +11,9 @@
     "preview": "vite preview",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "excel:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/export_excel_data.ps1",
+    "excel:import": "tsx scripts/import_excel.ts",
+    "excel:sync": "npm run excel:export && npm run excel:import",
     "lint": "oxlint"
   },
   "dependencies": {
