@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
+import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty, today } from '../lib/api'
 
 type Purchase = {
@@ -44,15 +46,14 @@ export function PurchasesPage() {
   }, [kind, ings, resale])
 
   const options = kind === 'Ingredient' ? ings : resale
+  const names = Object.fromEntries([...ings, ...resale].map((o) => [o.id, o.name]))
 
   return (
     <>
-      <section className="hero-panel">
-        <h1>შესყიდვები</h1>
-        <p>ინგრედიენტი ან შესყიდული პროდუქტი — ნაშთი და საშუალო ფასი აქედან იზრდება.</p>
-      </section>
-      <section className="panel">
-        <div className="row-actions">
+      <PageHeader
+        title="შესყიდვები"
+        description="ინგრედიენტი ან შესყიდული პროდუქტი — ნაშთი და საშუალო ფასი აქედან იზრდება."
+        actions={
           <ModalForm
             title="ახალი შესყიდვა"
             triggerLabel="დამატება"
@@ -70,11 +71,11 @@ export function PurchasesPage() {
               load()
             }}
           >
-            <label>
+            <label className="field">
               თარიღი
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </label>
-            <label>
+            <label className="field">
               ტიპი
               <select
                 value={kind}
@@ -84,7 +85,7 @@ export function PurchasesPage() {
                 <option value="Product">შესყიდული პროდუქტი</option>
               </select>
             </label>
-            <label>
+            <label className="field">
               დასახელება
               <select value={itemId} onChange={(e) => setItemId(e.target.value)} required>
                 {options.map((o) => (
@@ -94,11 +95,11 @@ export function PurchasesPage() {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="field">
               რაოდენობა
               <input type="number" step="any" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
-            <label>
+            <label className="field">
               ფასი / ერთ.
               <input
                 type="number"
@@ -108,34 +109,64 @@ export function PurchasesPage() {
               />
             </label>
           </ModalForm>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>თარიღი</th>
-                <th>ტიპი</th>
-                <th>ID</th>
-                <th>რაოდ.</th>
-                <th>ფასი</th>
-                <th>ჯამი</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.date}</td>
-                  <td>{r.kind}</td>
-                  <td>{r.itemId}</td>
-                  <td>{qty(r.qty)}</td>
-                  <td>{money(r.unitPrice)}</td>
-                  <td>{money(r.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        }
+      />
+      <Surface>
+        <DataTable
+          rows={rows}
+          rowKey={(r) => r.id}
+          defaultSortKey="date"
+          defaultSortDir="desc"
+          columns={[
+            {
+              key: 'date',
+              label: 'თარიღი',
+              sortValue: (r) => r.date,
+              filterValue: (r) => r.date,
+              render: (r) => r.date,
+            },
+            {
+              key: 'kind',
+              label: 'ტიპი',
+              sortValue: (r) => r.kind,
+              filterValue: (r) => r.kind,
+              render: (r) => (r.kind === 'Ingredient' ? 'ინგრედიენტი' : 'პროდუქტი'),
+            },
+            {
+              key: 'itemId',
+              label: 'დასახელება',
+              sortValue: (r) => names[r.itemId] ?? r.itemId,
+              filterValue: (r) => `${r.itemId} ${names[r.itemId] ?? ''}`,
+              render: (r) => names[r.itemId] ?? r.itemId,
+            },
+            {
+              key: 'qty',
+              label: 'რაოდ.',
+              title: 'რაოდენობა',
+              align: 'right',
+              sortValue: (r) => r.qty,
+              filterValue: (r) => String(r.qty),
+              render: (r) => qty(r.qty),
+            },
+            {
+              key: 'unitPrice',
+              label: 'ფასი',
+              align: 'right',
+              sortValue: (r) => r.unitPrice,
+              filterValue: (r) => String(r.unitPrice),
+              render: (r) => money(r.unitPrice),
+            },
+            {
+              key: 'total',
+              label: 'ჯამი',
+              align: 'right',
+              sortValue: (r) => r.total,
+              filterValue: (r) => String(r.total),
+              render: (r) => money(r.total),
+            },
+          ]}
+        />
+      </Surface>
     </>
   )
 }

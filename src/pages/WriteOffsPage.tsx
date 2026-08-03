@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
+import { PageHeader, Surface } from '../components/ui'
 import { api, qty, today } from '../lib/api'
 
 type Row = {
@@ -40,8 +42,8 @@ export function WriteOffsPage() {
     load()
   }, [load])
 
-  const options =
-    kind === 'Ingredient' ? ings : [...prods, ...resale]
+  const options = kind === 'Ingredient' ? ings : [...prods, ...resale]
+  const names = Object.fromEntries([...ings, ...prods, ...resale].map((o) => [o.id, o.name]))
 
   useEffect(() => {
     if (options[0]) setItemId(options[0].id)
@@ -50,12 +52,10 @@ export function WriteOffsPage() {
 
   return (
     <>
-      <section className="hero-panel">
-        <h1>ჩამოწერა</h1>
-        <p>გაფუჭებული ან დაკარგული ინგრედიენტი / პროდუქტი.</p>
-      </section>
-      <section className="panel">
-        <div className="row-actions">
+      <PageHeader
+        title="ჩამოწერა"
+        description="გაფუჭებული ან დაკარგული ინგრედიენტი / პროდუქტი."
+        actions={
           <ModalForm
             title="ახალი ჩამოწერა"
             triggerLabel="დამატება"
@@ -73,11 +73,11 @@ export function WriteOffsPage() {
               load()
             }}
           >
-            <label>
+            <label className="field">
               თარიღი
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </label>
-            <label>
+            <label className="field">
               ტიპი
               <select
                 value={kind}
@@ -87,7 +87,7 @@ export function WriteOffsPage() {
                 <option value="Product">პროდუქტი</option>
               </select>
             </label>
-            <label>
+            <label className="field">
               დასახელება
               <select value={itemId} onChange={(e) => setItemId(e.target.value)}>
                 {options.map((o) => (
@@ -97,41 +97,64 @@ export function WriteOffsPage() {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="field">
               რაოდენობა
               <input type="number" step="any" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
-            <label>
+            <label className="field">
               შენიშვნა
               <input value={note} onChange={(e) => setNote(e.target.value)} />
             </label>
           </ModalForm>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>თარიღი</th>
-                <th>ტიპი</th>
-                <th>ID</th>
-                <th>რაოდ.</th>
-                <th>შენიშვნა</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.date}</td>
-                  <td>{r.kind}</td>
-                  <td>{r.itemId}</td>
-                  <td>{qty(r.qty)}</td>
-                  <td>{r.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        }
+      />
+      <Surface>
+        <DataTable
+          rows={rows}
+          rowKey={(r) => r.id}
+          defaultSortKey="date"
+          defaultSortDir="desc"
+          columns={[
+            {
+              key: 'date',
+              label: 'თარიღი',
+              sortValue: (r) => r.date,
+              filterValue: (r) => r.date,
+              render: (r) => r.date,
+            },
+            {
+              key: 'kind',
+              label: 'ტიპი',
+              sortValue: (r) => r.kind,
+              filterValue: (r) => r.kind,
+              render: (r) => (r.kind === 'Ingredient' ? 'ინგრედიენტი' : 'პროდუქტი'),
+            },
+            {
+              key: 'itemId',
+              label: 'დასახელება',
+              sortValue: (r) => names[r.itemId] ?? r.itemId,
+              filterValue: (r) => `${r.itemId} ${names[r.itemId] ?? ''}`,
+              render: (r) => names[r.itemId] ?? r.itemId,
+            },
+            {
+              key: 'qty',
+              label: 'რაოდ.',
+              title: 'რაოდენობა',
+              align: 'right',
+              sortValue: (r) => r.qty,
+              filterValue: (r) => String(r.qty),
+              render: (r) => qty(r.qty),
+            },
+            {
+              key: 'note',
+              label: 'შენიშვნა',
+              sortValue: (r) => r.note,
+              filterValue: (r) => r.note,
+              render: (r) => r.note || '—',
+            },
+          ]}
+        />
+      </Surface>
     </>
   )
 }

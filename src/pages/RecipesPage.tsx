@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
+import { Button, PageHeader, Surface } from '../components/ui'
 import { api, qty } from '../lib/api'
 
 type Line = {
@@ -41,12 +43,10 @@ export function RecipesPage() {
 
   return (
     <>
-      <section className="hero-panel">
-        <h1>რეცეპტები</h1>
-        <p>1 ერთეულ პროდუქტზე რამდენი ინგრედიენტი სჭირდება.</p>
-      </section>
-      <section className="panel">
-        <div className="row-actions">
+      <PageHeader
+        title="რეცეპტები"
+        description="1 ერთეულ პროდუქტზე რამდენი ინგრედიენტი სჭირდება."
+        actions={
           <ModalForm
             title="რეცეპტის ხაზი"
             triggerLabel="დამატება"
@@ -62,7 +62,7 @@ export function RecipesPage() {
               load()
             }}
           >
-            <label>
+            <label className="field">
               პროდუქტი
               <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
                 {products.map((p) => (
@@ -72,9 +72,13 @@ export function RecipesPage() {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="field">
               ინგრედიენტი
-              <select value={ingredientId} onChange={(e) => setIngredientId(e.target.value)} required>
+              <select
+                value={ingredientId}
+                onChange={(e) => setIngredientId(e.target.value)}
+                required
+              >
                 {ingredients.map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.name}
@@ -82,7 +86,7 @@ export function RecipesPage() {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="field">
               რაოდენობა
               <input
                 type="number"
@@ -94,43 +98,64 @@ export function RecipesPage() {
               />
             </label>
           </ModalForm>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>პროდუქტი</th>
-                <th>ინგრედიენტი</th>
-                <th>რაოდენობა</th>
-                <th>ერთეული</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l) => (
-                <tr key={l.id}>
-                  <td>{l.productName}</td>
-                  <td>{l.ingredientName}</td>
-                  <td>{qty(l.qty)}</td>
-                  <td>{l.unit}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="secondary outline"
-                      onClick={async () => {
-                        await api(`/recipes/${l.id}`, { method: 'DELETE' })
-                        load()
-                      }}
-                    >
-                      წაშლა
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        }
+      />
+      <Surface>
+        <DataTable
+          rows={lines}
+          rowKey={(r) => r.id}
+          defaultSortKey="productName"
+          columns={[
+            {
+              key: 'productName',
+              label: 'პროდუქტი',
+              sortValue: (r) => r.productName,
+              filterValue: (r) => r.productName,
+              render: (r) => r.productName,
+            },
+            {
+              key: 'ingredientName',
+              label: 'ინგრედიენტი',
+              sortValue: (r) => r.ingredientName,
+              filterValue: (r) => r.ingredientName,
+              render: (r) => r.ingredientName,
+            },
+            {
+              key: 'qty',
+              label: 'რაოდენობა',
+              align: 'right',
+              sortValue: (r) => r.qty,
+              filterValue: (r) => String(r.qty),
+              render: (r) => qty(r.qty),
+            },
+            {
+              key: 'unit',
+              label: 'ერთეული',
+              sortValue: (r) => r.unit,
+              filterValue: (r) => r.unit,
+              render: (r) => r.unit,
+            },
+            {
+              key: 'actions',
+              label: '',
+              sortable: false,
+              filterable: false,
+              render: (r) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await api(`/recipes/${r.id}`, { method: 'DELETE' })
+                    load()
+                  }}
+                >
+                  წაშლა
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </Surface>
     </>
   )
 }

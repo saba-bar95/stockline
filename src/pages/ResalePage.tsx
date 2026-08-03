@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
+import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty } from '../lib/api'
 
 type Row = {
@@ -25,12 +27,10 @@ export function ResalePage() {
 
   return (
     <>
-      <section className="hero-panel">
-        <h1>შესყიდული პროდუქცია</h1>
-        <p>მზა პროდუქტები, რომლებსაც არ ამზადებ — ყიდულობ და ხელახლა ყიდი.</p>
-      </section>
-      <section className="panel">
-        <div className="row-actions">
+      <PageHeader
+        title="შესყიდული პროდუქცია"
+        description="მზა პროდუქტები, რომლებსაც არ ამზადებ — ყიდულობ და ხელახლა ყიდი."
+        actions={
           <ModalForm
             title="ახალი შესყიდული პროდუქტი"
             triggerLabel="დამატება"
@@ -43,47 +43,84 @@ export function ResalePage() {
               load()
             }}
           >
-            <label>
+            <label className="field">
               დასახელება
               <input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
-            <label>
+            <label className="field">
               ერთეული
               <input value={unit} onChange={(e) => setUnit(e.target.value)} required />
             </label>
-            <label>
+            <label className="field">
               კატეგორია
               <input value={category} onChange={(e) => setCategory(e.target.value)} />
             </label>
           </ModalForm>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>დასახელება</th>
-                <th>ერთეული</th>
-                <th>თვითღირ.</th>
-                <th>ნაშთი</th>
-                <th>ნაშთის ღირ.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.id}</td>
-                  <td>{r.name}</td>
-                  <td>{r.unit}</td>
-                  <td>{money(r.unitCost)}</td>
-                  <td>{qty(r.stock)}</td>
-                  <td>{money(r.stockValue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        }
+      />
+      <Surface>
+        <DataTable
+          rows={rows}
+          rowKey={(r) => r.id}
+          defaultSortKey="name"
+          columns={[
+            {
+              key: 'id',
+              label: 'ID',
+              sortValue: (r) => r.id,
+              filterValue: (r) => r.id,
+              render: (r) => <span className="mono">{r.id}</span>,
+            },
+            {
+              key: 'name',
+              label: 'დასახელება',
+              sortValue: (r) => r.name,
+              filterValue: (r) => r.name,
+              render: (r) => r.name,
+            },
+            {
+              key: 'unit',
+              label: 'ერთეული',
+              sortValue: (r) => r.unit,
+              filterValue: (r) => r.unit,
+              render: (r) => r.unit,
+            },
+            {
+              key: 'category',
+              label: 'კატეგორია',
+              sortValue: (r) => r.category,
+              filterValue: (r) => r.category,
+              render: (r) => r.category || '—',
+            },
+            {
+              key: 'unitCost',
+              label: 'თვითღირ.',
+              title: 'თვითღირებულება',
+              align: 'right',
+              sortValue: (r) => r.unitCost,
+              filterValue: (r) => String(r.unitCost),
+              render: (r) => money(r.unitCost),
+            },
+            {
+              key: 'stock',
+              label: 'ნაშთი',
+              align: 'right',
+              sortValue: (r) => r.stock,
+              filterValue: (r) => String(r.stock),
+              render: (r) => qty(r.stock),
+            },
+            {
+              key: 'stockValue',
+              label: 'ნაშთის ღირ.',
+              title: 'ნაშთის ღირებულება',
+              align: 'right',
+              sortValue: (r) => r.stockValue,
+              filterValue: (r) => String(r.stockValue),
+              render: (r) => money(r.stockValue),
+            },
+          ]}
+        />
+      </Surface>
     </>
   )
 }

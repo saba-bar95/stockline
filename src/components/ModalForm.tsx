@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
+import { Modal } from './Modal'
+import { Button } from './ui'
 
 type Props = {
   title: string
@@ -14,12 +16,8 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
   const [err, setErr] = useState('')
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+    if (!open) setErr('')
+  }, [open])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -37,36 +35,21 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)}>
-        {triggerLabel}
-      </button>
-      {open && (
-        <dialog open>
-          <article>
-            <header>
-              <button
-                type="button"
-                aria-label="Close"
-                className="close"
-                onClick={() => setOpen(false)}
-              />
-              <h3 style={{ margin: 0, fontFamily: 'Fraunces, Georgia, serif' }}>{title}</h3>
-            </header>
-            <form onSubmit={handleSubmit}>
-              {children}
-              {err && <p style={{ color: '#8a2e1f' }}>{err}</p>}
-              <footer style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="secondary" onClick={() => setOpen(false)}>
-                  გაუქმება
-                </button>
-                <button type="submit" aria-busy={busy}>
-                  დამატება
-                </button>
-              </footer>
-            </form>
-          </article>
-        </dialog>
-      )}
+      <Button onClick={() => setOpen(true)}>{triggerLabel}</Button>
+      <Modal title={title} open={open} onClose={() => setOpen(false)}>
+        <form onSubmit={handleSubmit} className="space-y-1">
+          {children}
+          {err ? <p className="mt-3 text-sm text-danger">{err}</p> : null}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              გაუქმება
+            </Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? 'ინახება…' : 'დამატება'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </>
   )
 }
