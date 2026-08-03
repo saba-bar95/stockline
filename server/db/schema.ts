@@ -49,6 +49,8 @@ export const productionRuns = sqliteTable('production_runs', {
   date: text('date').notNull(),
   productId: text('product_id').notNull().references(() => products.id),
   qty: real('qty').notNull(),
+  /** Snapshotted ingredient unit cost at production time (Excel col F). */
+  ingredientUnitCost: real('ingredient_unit_cost').notNull().default(0),
 })
 
 export const sales = sqliteTable('sales', {

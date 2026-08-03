@@ -106,8 +106,8 @@ WriteJson 'purchases_raw' $purs
 $runHdr = @(); $wsRun = $map['wsRun']; for ($c=1;$c -le 10;$c++){ $runHdr += $wsRun.Cells.Item(1,$c).Text }
 WriteJson 'production_headers' $runHdr
 $runs = @()
-foreach ($row in (SheetRows 'wsRun' 5)) {
-  $runs += @{ date="$($row[0])".Trim(); id="$($row[1])".Trim(); name="$($row[2])".Trim(); qty="$($row[3])".Trim(); unit="$($row[4])".Trim() }
+foreach ($row in (SheetRows 'wsRun' 9)) {
+  $runs += @{ date="$($row[0])".Trim(); id="$($row[1])".Trim(); name="$($row[2])".Trim(); qty="$($row[3])".Trim(); unit="$($row[4])".Trim(); unitCost="$($row[5])".Trim() }
 }
 WriteJson 'production' $runs
 

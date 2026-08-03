@@ -2,17 +2,24 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { db, migrate } from './db/index.ts'
 import {
   avgIngredientCost,
   avgResaleCost,
   ingredientStock,
+  lastPurchaseDate,
   nextId,
   plSummary,
+  productFullUnitCost,
+  productIngredientUnitCost,
+  productOverheadUnitCost,
+  productQtyIn,
   productStock,
   recipeUnitCost,
   resaleStock,
+  runIngredientTotal,
+  runOverheadTotal,
 } from './db/logic.ts'
 import {
   employees,
@@ -43,8 +50,85 @@ app.get('/ingredients', (c) => {
       ...r,
       avgCost: avgIngredientCost(r.id),
       stock: ingredientStock(r.id),
+      lastPurchaseDate: lastPurchaseDate(r.id),
     })),
   )
+})
+
+app.get('/ingredients/:id/history', (c) => {
+  const id = c.req.param('id')
+  const ing = db.select().from(ingredients).where(eq(ingredients.id, id)).get()
+  if (!ing) return c.json({ error: 'არ მოიძებნა' }, 404)
+
+  const pur = db
+    .select()
+    .from(purchases)
+    .where(and(eq(purchases.kind, 'Ingredient'), eq(purchases.itemId, id)))
+    .orderBy(desc(purchases.date))
+    .all()
+    .map((p) => ({
+      date: p.date,
+      type: 'შესყიდვა',
+      qty: p.qty,
+      unitPrice: p.unitPrice,
+      total: p.total,
+      note: p.note,
+    }))
+
+  const prodNames = Object.fromEntries(db.select().from(products).all().map((p) => [p.id, p.name]))
+  const used: Array<{
+    date: string
+    type: string
+    qty: number
+    unitPrice: number
+    total: number
+    note: string
+  }> = []
+  const avg = avgIngredientCost(id)
+  for (const run of db.select().from(productionRuns).all()) {
+    const line = db
+      .select()
+      .from(recipeLines)
+      .where(and(eq(recipeLines.productId, run.productId), eq(recipeLines.ingredientId, id)))
+      .get()
+    if (!line) continue
+    const usedQty = run.qty * line.qty
+    used.push({
+      date: run.date,
+      type: 'წარმოება',
+      qty: -usedQty,
+      unitPrice: avg,
+      total: -usedQty * avg,
+      note: prodNames[run.productId] ?? run.productId,
+    })
+  }
+
+  const wo = db
+    .select()
+    .from(writeOffs)
+    .where(and(eq(writeOffs.kind, 'Ingredient'), eq(writeOffs.itemId, id)))
+    .orderBy(desc(writeOffs.date))
+    .all()
+    .map((w) => ({
+      date: w.date,
+      type: 'ჩამოწერა',
+      qty: -w.qty,
+      unitPrice: avgIngredientCost(id),
+      total: -w.qty * avgIngredientCost(id),
+      note: w.note,
+    }))
+
+  const movements = [...pur, ...used, ...wo].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+
+  return c.json({
+    ingredient: {
+      ...ing,
+      avgCost: avgIngredientCost(id),
+      stock: ingredientStock(id),
+      lastPurchaseDate: lastPurchaseDate(id),
+    },
+    movements,
+  })
 })
 
 app.post('/ingredients', async (c) => {
@@ -68,15 +152,22 @@ app.get('/products', (c) => {
   const rows = db.select().from(products).orderBy(products.name).all()
   return c.json(
     rows.map((r) => {
-      const unitCost = recipeUnitCost(r.id)
+      const qtyIn = productQtyIn(r.id)
+      const ingUnit = productIngredientUnitCost(r.id)
+      const ohUnit = productOverheadUnitCost(r.id)
+      const fullUnit = productFullUnitCost(r.id)
       const stock = productStock(r.id)
       return {
         ...r,
-        unitCost,
-        fullUnitCost: unitCost, // OH allocation detailed later per-run
+        qtyIn,
+        unitCost: ingUnit,
+        ohUnitCost: ohUnit,
+        ohTotal: qtyIn * ohUnit,
+        fullUnitCost: fullUnit,
+        fullTotal: qtyIn * fullUnit,
         stock,
-        stockValue: stock * unitCost,
-        recommendedPrice: unitCost * 3,
+        stockValue: stock * fullUnit,
+        recommendedPrice: fullUnit * 3,
       }
     }),
   )
@@ -185,12 +276,16 @@ app.get('/production', (c) => {
   const names = Object.fromEntries(db.select().from(products).all().map((p) => [p.id, p.name]))
   return c.json(
     rows.map((r) => {
-      const ingCost = recipeUnitCost(r.productId) * r.qty
+      const unitSnap = r.ingredientUnitCost > 0 ? r.ingredientUnitCost : recipeUnitCost(r.productId)
+      const ingTotal = runIngredientTotal(r)
+      const ohTotal = runOverheadTotal(r.date, r.productId, r.qty, r.id)
       return {
         ...r,
         productName: names[r.productId] ?? r.productId,
-        ingredientCost: ingCost,
-        unitCost: recipeUnitCost(r.productId),
+        unitCost: unitSnap,
+        ingredientCost: ingTotal,
+        overheadCost: ohTotal,
+        fullCost: ingTotal + ohTotal,
       }
     }),
   )
@@ -200,7 +295,6 @@ app.post('/production', async (c) => {
   const body = z
     .object({ date: z.string(), productId: z.string(), qty: z.number().positive() })
     .parse(await c.req.json())
-  // stock check for ingredients
   const lines = db.select().from(recipeLines).where(eq(recipeLines.productId, body.productId)).all()
   for (const line of lines) {
     const need = line.qty * body.qty
@@ -212,8 +306,14 @@ app.post('/production', async (c) => {
       )
     }
   }
+  const snap = recipeUnitCost(body.productId)
   db.insert(productionRuns)
-    .values({ date: body.date, productId: body.productId, qty: body.qty })
+    .values({
+      date: body.date,
+      productId: body.productId,
+      qty: body.qty,
+      ingredientUnitCost: snap,
+    })
     .run()
   return c.json({ ok: true }, 201)
 })

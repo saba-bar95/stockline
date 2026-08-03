@@ -59,7 +59,8 @@ export function migrate() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT NOT NULL,
       product_id TEXT NOT NULL REFERENCES products(id),
-      qty REAL NOT NULL
+      qty REAL NOT NULL,
+      ingredient_unit_cost REAL NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,4 +101,11 @@ export function migrate() {
       rate REAL NOT NULL DEFAULT 0
     );
   `)
+  try {
+    sqlite.exec(
+      `ALTER TABLE production_runs ADD COLUMN ingredient_unit_cost REAL NOT NULL DEFAULT 0`,
+    )
+  } catch {
+    /* column already exists */
+  }
 }

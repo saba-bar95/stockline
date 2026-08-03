@@ -19,7 +19,15 @@ import {
   sales,
   writeOffs,
 } from '../server/db/schema.ts'
-import { avgIngredientCost, ingredientStock, productStock, recipeUnitCost } from '../server/db/logic.ts'
+import {
+  avgIngredientCost,
+  ingredientStock,
+  productFullUnitCost,
+  productIngredientUnitCost,
+  productOverheadUnitCost,
+  productStock,
+  recipeUnitCost,
+} from '../server/db/logic.ts'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dir = path.join(__dirname, 'export')
@@ -119,12 +127,18 @@ for (const r of purs) {
   purN++
 }
 
-const runs = read<Array<{ date: string; id: string; qty: string }>>('production.json')
+const runs = read<Array<{ date: string; id: string; qty: string; unitCost?: string }>>('production.json')
 let runN = 0
 for (const r of runs) {
   if (!isDate(r.date) || !r.id || num(r.qty) <= 0) continue
+  const snap = num(r.unitCost ?? '0')
   db.insert(productionRuns)
-    .values({ date: r.date, productId: r.id, qty: num(r.qty) })
+    .values({
+      date: r.date,
+      productId: r.id,
+      qty: num(r.qty),
+      ingredientUnitCost: snap > 0 ? snap : recipeUnitCost(r.id),
+    })
     .run()
   runN++
 }
@@ -198,7 +212,7 @@ const exps = read<Array<{ date: string; type: string; name: string; c4: string; 
 let expN = 0
 for (const r of exps) {
   if (!isDate(r.date)) continue
-  if (!r.type || r.type === 'ტიპი' || r.type === 'TITLE') continue
+  if (!r.type || r.type === 'ტიპი' || r.type === 'TITLE' || r.type === 'ხელფასი') continue
   const gel = num(r.gel)
   if (gel <= 0 && num(r.c4) <= 0) continue
   db.insert(expenses)
@@ -236,27 +250,31 @@ console.log(
 
 // Compare a few products vs Excel snapshot (recipe unit cost ≈ Excel col E when no OH)
 const snap = read<
-  Array<{ id: string; name: string; qtyIn: string; ingUnit: string; stock: string; fullUnit: string }>
+  Array<{
+    id: string
+    name: string
+    qtyIn: string
+    ingUnit: string
+    ohUnit: string
+    stock: string
+    fullUnit: string
+  }>
 >('excel_product_snapshot.json')
 
-function parseNum(s: string): number {
-  return num(String(s).replace(/\s/g, ''))
-}
-
-console.log('\nCompare sample products (app recipe unit cost vs Excel ing unit):')
+console.log('\nCompare sample products vs Excel snapshot:')
 for (const id of ['პ-02', 'პ-03', 'პ-06']) {
   const s = snap.find((x) => x.id === id)
   if (!s) continue
-  const appUnit = recipeUnitCost(id)
-  const appStock = productStock(id)
   console.log({
     id,
     name: s.name,
     excelIngUnit: s.ingUnit,
-    appRecipeUnit: appUnit.toFixed(2),
+    appIngUnit: productIngredientUnitCost(id).toFixed(2),
+    excelOhUnit: s.ohUnit,
+    appOhUnit: productOverheadUnitCost(id).toFixed(2),
+    appFullUnit: productFullUnitCost(id).toFixed(2),
     excelQtyIn: s.qtyIn,
-    appStock: appStock.toFixed(3),
-    note: 'Excel full unit includes OH; app product list shows recipe-only until OH is fully ported',
+    appStock: productStock(id).toFixed(3),
   })
 }
 
