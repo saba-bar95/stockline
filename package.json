@@ -4,15 +4,16 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n web,api -c cyan,magenta \"vite\" \"tsx watch server/index.ts\"",
+    "dev": "concurrently -n web,api -c cyan,magenta \"vite\" \"tsx watch server/run.ts\"",
     "dev:web": "vite",
-    "dev:api": "tsx watch server/index.ts",
+    "dev:api": "tsx watch server/run.ts",
     "build": "tsc -b && vite build",
+    "start": "tsx server/run.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "drizzle-kit push",
-    "db:push:neon": "drizzle-kit push --config drizzle.neon.config.ts",
+    "db:push:neon": "tsx -e \"import 'dotenv/config'; import { spawnSync } from 'node:child_process'; const r = spawnSync('npx', ['drizzle-kit', 'push', '--config', 'drizzle.neon.config.ts'], { stdio: 'inherit', shell: true, env: process.env }); process.exit(r.status ?? 1)\"",
     "db:studio": "drizzle-kit studio",
     "excel:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/export_excel_data.ps1",
     "excel:import": "tsx scripts/import_excel.ts",
@@ -34,6 +35,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
+    "tsx": "^4.23.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -48,7 +50,6 @@
     "drizzle-kit": "^0.31.10",
     "oxlint": "^1.75.0",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.5",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
     "vitest": "^3.2.4"

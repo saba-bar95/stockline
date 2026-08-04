@@ -66,14 +66,16 @@ Signed-in kitchens can download **only their own data** from Settings:
 
 ## Deploy (portfolio)
 
-1. **Neon** — create a project, copy `DATABASE_URL`.
-2. Push schema: `DATABASE_URL=postgresql://… npm run db:push:neon`
-3. **Clerk** — create application, enable Email + Google, copy publishable + secret keys. Set allowed origins / redirect URLs to your Vercel domain.
-4. **Vercel** — deploy the Vite app; run the Hono API as a serverless function or small Node host. Set all env vars above; set `CORS_ORIGIN` to the Vercel URL.
-5. When free seats are full: `REGISTRATION_OPEN=false` (and optionally disable Clerk public sign-ups).
+დეტალური ნაბიჯები: **[DEPLOY.md](./DEPLOY.md)** (Neon + Railway API + Vercel UI).
 
-Local SQLite data is **not** auto-migrated to Neon. Use a fresh Neon schema for production; optionally import Excel into the local-dev org only via `npm run excel:sync`.
+მოკლედ:
 
+1. **Neon** — შექმენი პროექტი, დააკოპირე `DATABASE_URL`, გაუშვი `npm run db:push:neon`.
+2. **Railway** — დეპლოი API (`npx tsx server/run.ts`), env: `CLERK_SECRET_KEY`, `DATABASE_URL`, `CORS_ORIGIN`.
+3. **Vercel** — დეპლოი UI; `VITE_CLERK_PUBLISHABLE_KEY`; `vercel.json`-ში ჩაწერე Railway URL rewrite-ისთვის.
+4. **Clerk** — დაამატე Vercel domain allowed origins / redirect URLs.
+
+Local SQLite data is **not** auto-migrated to Neon.
 ## Domains
 
 ინგრედიენტები · შესყიდული · პროდუქცია · რეცეპტები · შესყიდვები · წარმოება · გაყიდვები · ჩამოწერა · HR · ზედნადები · მოგება-ზარალი

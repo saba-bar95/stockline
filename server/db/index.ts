@@ -3,15 +3,18 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as schema from "./schema.ts";
+import { createNeonDb, isPostgresUrl } from "./neon.ts";
+import * as sqliteSchema from "./schema.ts";
+import { s as schema } from "./tables.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.resolve(__dirname, "../../data");
 
 const rawUrl = process.env.DATABASE_URL;
+export const isPostgres = isPostgresUrl(rawUrl);
 const isMemory = Boolean(rawUrl?.includes(":memory:"));
 
-if (!isMemory) {
+if (!isPostgres && !isMemory) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
@@ -23,14 +26,20 @@ function resolveDbPath(): string {
 
 const dbPath = resolveDbPath();
 
-const sqlite = new Database(dbPath);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+let sqlite: Database.Database | undefined;
+if (!isPostgres) {
+  sqlite = new Database(dbPath);
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
+}
 
-export const db = drizzle(sqlite, { schema });
+export const db: any = isPostgres
+  ? createNeonDb(rawUrl!)
+  : drizzle(sqlite!, { schema: sqliteSchema });
 export const rawSqlite = sqlite;
 
 export function migrate() {
+  if (!sqlite) return;
   // Fresh multi-tenant schema. Legacy mza.sqlite is not auto-migrated.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS organizations (
@@ -162,4 +171,22 @@ export function migrate() {
     );
     CREATE INDEX IF NOT EXISTS expenses_org_idx ON expenses(organization_id);
   `);
+}
+
+export async function qAll<T = any>(builder: any): Promise<T[]> {
+  return isPostgres ? await builder : Promise.resolve(builder.all());
+}
+
+export async function qGet<T = any>(builder: any): Promise<T | undefined> {
+  if (!isPostgres) return Promise.resolve(builder.get());
+  const rows = await builder;
+  return rows[0];
+}
+
+export async function qRun(builder: any): Promise<void> {
+  if (isPostgres) {
+    await builder;
+  } else {
+    builder.run();
+  }
 }
