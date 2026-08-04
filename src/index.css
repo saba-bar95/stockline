@@ -1,46 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Georgian:wght@500;600;700&display=swap');
-@import 'tailwindcss';
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
 
 /* Firago-style Georgian UI face (FiraGO OFL — Latin + Georgian, even letter height).
    Drop licensed Firago-*.woff2 into /public/fonts/ to use the commercial Firago instead. */
 @font-face {
-  font-family: 'Firago';
-  src: url('/fonts/FiraGO-Regular.woff2') format('woff2');
+  font-family: "Firago";
+  src: url("/fonts/FiraGO-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Firago';
-  src: url('/fonts/FiraGO-Medium.woff2') format('woff2');
+  font-family: "Firago";
+  src: url("/fonts/FiraGO-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Firago';
-  src: url('/fonts/FiraGO-Bold.woff2') format('woff2');
+  font-family: "Firago";
+  src: url("/fonts/FiraGO-Bold.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Firago';
-  src: url('/fonts/FiraGO-Bold.woff2') format('woff2');
+  font-family: "Firago";
+  src: url("/fonts/FiraGO-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 @theme {
-  --font-sans: 'IBM Plex Sans', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Cormorant Garamond', 'Noto Serif Georgian', Georgia, 'Times New Roman', serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --font-ge: 'Firago', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
-  --font-pl: 'Space Grotesk', 'IBM Plex Sans', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    "IBM Plex Sans", "Noto Sans Georgian", ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    "Cormorant Garamond", "Noto Serif Georgian", Georgia, "Times New Roman",
+    serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-ge:
+    "Firago", "Noto Sans Georgian", ui-sans-serif, system-ui, sans-serif;
+  --font-pl:
+    "Space Grotesk", "IBM Plex Sans", "Noto Sans Georgian", ui-sans-serif,
+    system-ui, sans-serif;
 
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
@@ -62,7 +68,7 @@
 }
 
 :root,
-[data-theme='light'] {
+[data-theme="light"] {
   color-scheme: light;
   --ink: #0f1a17;
   --ink-soft: #3d4f48;
@@ -79,12 +85,13 @@
   --sidebar: #10221e;
   --sidebar-hover: #1a3330;
   --sidebar-active: #0f766e;
-  --shadow-panel-token: 0 1px 2px rgb(15 26 23 / 0.04), 0 8px 24px rgb(15 26 23 / 0.06);
+  --shadow-panel-token:
+    0 1px 2px rgb(15 26 23 / 0.04), 0 8px 24px rgb(15 26 23 / 0.06);
   --grad-teal: rgb(15 118 110 / 0.08);
   --grad-amber: rgb(194 65 12 / 0.05);
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   color-scheme: dark;
   --ink: #e7efeb;
   --ink-soft: #b0c0b8;
@@ -101,20 +108,21 @@
   --sidebar: #060c0a;
   --sidebar-hover: #12201c;
   --sidebar-active: #0f766e;
-  --shadow-panel-token: 0 1px 2px rgb(0 0 0 / 0.35), 0 12px 32px rgb(0 0 0 / 0.45);
+  --shadow-panel-token:
+    0 1px 2px rgb(0 0 0 / 0.35), 0 12px 32px rgb(0 0 0 / 0.45);
   --grad-teal: rgb(45 212 191 / 0.07);
   --grad-amber: rgb(251 146 60 / 0.05);
 }
 
-html[data-font-size='sm'] {
+html[data-font-size="sm"] {
   font-size: 14px;
 }
 
-html[data-font-size='md'] {
+html[data-font-size="md"] {
   font-size: 16px;
 }
 
-html[data-font-size='lg'] {
+html[data-font-size="lg"] {
   font-size: 18px;
 }
 
@@ -136,8 +144,16 @@ html[data-font-size='lg'] {
     font-family: var(--font-sans);
     color: var(--ink);
     background:
-      radial-gradient(1200px 500px at 0% -10%, var(--grad-teal), transparent 55%),
-      radial-gradient(900px 420px at 100% 0%, var(--grad-amber), transparent 50%),
+      radial-gradient(
+        1200px 500px at 0% -10%,
+        var(--grad-teal),
+        transparent 55%
+      ),
+      radial-gradient(
+        900px 420px at 100% 0%,
+        var(--grad-amber),
+        transparent 50%
+      ),
       var(--paper);
   }
 
@@ -233,7 +249,7 @@ html[data-font-size='lg'] {
   }
 
   .field select,
-  .ui-input[type='select'],
+  .ui-input[type="select"],
   select.ui-input {
     @apply pr-8;
   }
@@ -283,7 +299,7 @@ html[data-font-size='lg'] {
     color: transparent;
   }
 
-  [data-theme='dark'] .text-gradient-heading {
+  [data-theme="dark"] .text-gradient-heading {
     background-image: linear-gradient(
       120deg,
       var(--ink) 0%,
@@ -413,21 +429,573 @@ html[data-font-size='lg'] {
   }
 }
 
-/* Clerk: hide development / branding chrome; keep form light */
+/* Clerk: hide development / branding chrome */
 .cl-footer,
 .cl-internal-b3fm6y,
 .cl-badge,
-[class*='cl-footer'],
-[class*='developmentMode'],
-[data-localization-key='developmentMode'] {
+[class*="cl-footer"],
+[class*="developmentMode"],
+[data-localization-key="developmentMode"] {
   display: none !important;
 }
 
-.cl-card,
-.cl-main,
-.cl-rootBox {
+/* Clerk auth forms only — keep sign-in cards light */
+.auth-glass-card .cl-card,
+.auth-glass-card .cl-main,
+.auth-glass-card .cl-rootBox {
   background-color: #ffffff !important;
   color: #0f1a17 !important;
+}
+
+.auth-glass-card .cl-cardBox {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Sidebar account button — transparent trigger, no white root box */
+.sidebar-user-btn-root,
+.sidebar-user-btn-root.cl-rootBox,
+.sidebar-account .cl-rootBox,
+.sidebar-account .cl-userButtonRoot {
+  width: auto !important;
+  margin: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sidebar-account .cl-userButtonTrigger,
+.sidebar-account .cl-userButtonTrigger:hover,
+.sidebar-account .cl-userButtonTrigger:focus,
+.sidebar-account .cl-userButtonTrigger:focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.sidebar-account .cl-userButtonBox,
+.sidebar-account .cl-avatarBox {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Sidebar account popover — theme-aware + Space Grotesk / Firago */
+.sidebar-user-menu-root {
+  width: max-content !important;
+}
+
+.sidebar-user-menu,
+.sidebar-user-menu.cl-userButtonPopoverCard,
+.sidebar-user-menu-main,
+.sidebar-user-menu-main.cl-userButtonPopoverMain,
+.sidebar-user-menu-actions,
+.sidebar-user-menu-action,
+.sidebar-user-menu .cl-button,
+.sidebar-user-menu .cl-userPreviewMainIdentifier,
+.sidebar-user-menu .cl-userPreviewSecondaryIdentifier,
+.sidebar-user-menu .cl-userButtonPopoverActionButtonText {
+  font-family:
+    "Space Grotesk", "Firago", "Noto Sans Georgian", ui-sans-serif, system-ui,
+    sans-serif !important;
+  font-weight: 400 !important;
+}
+
+.sidebar-user-menu,
+.sidebar-user-menu.cl-userButtonPopoverCard {
+  width: max-content !important;
+  min-width: 13.5rem !important;
+  max-width: min(92vw, 18rem) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  font-size: 1rem !important;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.18) !important;
+}
+
+/* Light mode */
+:root:not([data-theme="dark"]) .sidebar-user-menu,
+:root:not([data-theme="dark"]) .sidebar-user-menu.cl-userButtonPopoverCard {
+  background: #ffffff !important;
+  color: #0f1a17 !important;
+  border: 1px solid rgb(15 26 23 / 0.12) !important;
+}
+
+:root:not([data-theme="dark"]) .sidebar-user-menu-main,
+:root:not([data-theme="dark"]) .sidebar-user-menu-main.cl-userButtonPopoverMain,
+:root:not([data-theme="dark"])
+  .cl-userButtonPopoverMain.sidebar-user-menu-main {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f1a17 !important;
+}
+
+:root:not([data-theme="dark"]) .sidebar-user-menu-preview {
+  border-bottom: 1px solid rgb(15 26 23 / 0.1) !important;
+}
+
+:root:not([data-theme="dark"]) .sidebar-user-menu-actions,
+:root:not([data-theme="dark"])
+  .sidebar-user-menu-actions.cl-userButtonPopoverActions {
+  background: #f3f6f4 !important;
+  background-color: #f3f6f4 !important;
+  border-top: 1px solid rgb(15 26 23 / 0.1) !important;
+}
+
+:root:not([data-theme="dark"]) .sidebar-user-menu-action,
+:root:not([data-theme="dark"])
+  .sidebar-user-menu-action.cl-userButtonPopoverActionButton,
+:root:not([data-theme="dark"]) .sidebar-user-menu .cl-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+  color: #0f1a17 !important;
+  background: transparent !important;
+}
+
+:root:not([data-theme="dark"]) .sidebar-user-menu-action:hover,
+:root:not([data-theme="dark"])
+  .sidebar-user-menu-action.cl-userButtonPopoverActionButton:hover,
+:root:not([data-theme="dark"]) .sidebar-user-menu .cl-button:hover {
+  background: rgb(15 118 110 / 0.1) !important;
+  color: #0f1a17 !important;
+}
+
+:root:not([data-theme="dark"]) .sidebar-user-menu .cl-userPreviewMainIdentifier,
+:root:not([data-theme="dark"])
+  .sidebar-user-menu
+  .cl-userPreviewSecondaryIdentifier,
+:root:not([data-theme="dark"])
+  .sidebar-user-menu
+  .cl-userButtonPopoverActionButtonText,
+:root:not([data-theme="dark"]) .sidebar-user-menu .cl-button span,
+:root:not([data-theme="dark"]) .sidebar-user-menu [class*="ActionButtonText"] {
+  font-size: 1rem !important;
+  color: #0f1a17 !important;
+  opacity: 1 !important;
+}
+
+:root:not([data-theme="dark"])
+  .sidebar-user-menu
+  .cl-userPreviewMainIdentifier {
+  font-size: 1.05rem !important;
+}
+
+:root:not([data-theme="dark"])
+  .sidebar-user-menu
+  .cl-userPreviewSecondaryIdentifier {
+  font-size: 0.9375rem !important;
+  color: #3d4f48 !important;
+}
+
+:root:not([data-theme="dark"])
+  .sidebar-user-menu
+  .cl-userButtonPopoverActionButtonIcon,
+:root:not([data-theme="dark"])
+  .sidebar-user-menu
+  .cl-userButtonPopoverActionButtonIconBox,
+:root:not([data-theme="dark"]) .sidebar-user-menu .cl-button__icon,
+:root:not([data-theme="dark"]) .sidebar-user-menu [class*="ActionButtonIcon"],
+:root:not([data-theme="dark"]) .sidebar-user-menu .cl-button svg {
+  color: #0f766e !important;
+  opacity: 1 !important;
+}
+
+/* Dark mode */
+[data-theme="dark"] .sidebar-user-menu,
+[data-theme="dark"] .sidebar-user-menu.cl-userButtonPopoverCard {
+  background: #1a3330 !important;
+  color: #ffffff !important;
+  border: 1px solid rgb(255 255 255 / 0.12) !important;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55) !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu-main,
+[data-theme="dark"] .sidebar-user-menu-main.cl-userButtonPopoverMain,
+[data-theme="dark"] .cl-userButtonPopoverMain.sidebar-user-menu-main {
+  background: #1a3330 !important;
+  background-color: #1a3330 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu-preview {
+  border-bottom: 1px solid rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu-actions,
+[data-theme="dark"] .sidebar-user-menu-actions.cl-userButtonPopoverActions {
+  background: #12201c !important;
+  background-color: #12201c !important;
+  border-top: 1px solid rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu-action,
+[data-theme="dark"] .sidebar-user-menu-action.cl-userButtonPopoverActionButton,
+[data-theme="dark"] .sidebar-user-menu .cl-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu-action:hover,
+[data-theme="dark"]
+  .sidebar-user-menu-action.cl-userButtonPopoverActionButton:hover,
+[data-theme="dark"] .sidebar-user-menu .cl-button:hover {
+  background: rgb(255 255 255 / 0.1) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu .cl-userPreviewMainIdentifier,
+[data-theme="dark"] .sidebar-user-menu .cl-userPreviewSecondaryIdentifier,
+[data-theme="dark"] .sidebar-user-menu .cl-userButtonPopoverActionButtonText,
+[data-theme="dark"] .sidebar-user-menu .cl-button span,
+[data-theme="dark"] .sidebar-user-menu [class*="ActionButtonText"] {
+  font-size: 1rem !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu .cl-userPreviewMainIdentifier {
+  font-size: 1.05rem !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu .cl-userPreviewSecondaryIdentifier {
+  font-size: 0.9375rem !important;
+  color: rgb(255 255 255 / 0.88) !important;
+}
+
+[data-theme="dark"] .sidebar-user-menu .cl-userButtonPopoverActionButtonIcon,
+[data-theme="dark"] .sidebar-user-menu .cl-userButtonPopoverActionButtonIconBox,
+[data-theme="dark"] .sidebar-user-menu .cl-button__icon,
+[data-theme="dark"] .sidebar-user-menu [class*="ActionButtonIcon"] {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"]
+  .sidebar-user-menu
+  .cl-userButtonPopoverActionButtonIcon
+  svg,
+[data-theme="dark"]
+  .sidebar-user-menu
+  .cl-userButtonPopoverActionButtonIconBox
+  svg,
+[data-theme="dark"] .sidebar-user-menu .cl-button svg {
+  color: #ffffff !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+.sidebar-user-menu .cl-userButtonPopoverActionButtonIcon,
+.sidebar-user-menu .cl-userButtonPopoverActionButtonIconBox,
+.sidebar-user-menu .cl-button__icon,
+.sidebar-user-menu [class*="ActionButtonIcon"] {
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  min-width: 1.35rem !important;
+  margin-inline-end: 0.15rem !important;
+}
+
+.sidebar-user-menu .cl-userButtonPopoverActionButtonIcon svg,
+.sidebar-user-menu .cl-userButtonPopoverActionButtonIconBox svg,
+.sidebar-user-menu .cl-button svg {
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+}
+
+.cl-userButtonPopoverFooter,
+.sidebar-user-menu .cl-userButtonPopoverFooter,
+[class*="userButtonPopoverFooter"],
+.cl-userButtonPopoverCard [class*="footer"],
+.cl-userButtonPopoverCard [data-localization-key*="secured"] {
+  display: none !important;
+}
+
+/* Manage-account modal — clean theme surfaces + section borders */
+.mise-clerk-profile-root,
+.mise-clerk-profile-cardbox {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mise-clerk-profile.cl-modalContent {
+  border-radius: 1rem !important;
+  overflow: hidden !important;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.35) !important;
+}
+
+.mise-clerk-profile-section,
+.mise-clerk-profile .cl-profileSection {
+  border: 1px solid transparent !important;
+  border-radius: 0.75rem !important;
+  padding: 0.85rem 1rem !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.mise-clerk-profile-section-header,
+.mise-clerk-profile .cl-profileSectionHeader {
+  border-bottom: 1px solid transparent !important;
+  padding-bottom: 0.65rem !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.mise-clerk-profile-nav,
+.mise-clerk-profile .cl-navbar {
+  border-inline-end: 1px solid transparent !important;
+}
+
+/* Left-rail "ანგარიში / შენი ანგარიშის ინფორმაცია" header — decorative only */
+.mise-clerk-profile .cl-navbarHeader,
+.mise-clerk-profile [class*="navbarHeader"],
+.mise-clerk-profile [data-localization-key="userProfile.navbar.title"],
+.mise-clerk-profile [data-localization-key="userProfile.navbar.description"],
+.mise-clerk-profile [data-localization-key*="navbar.title"],
+.mise-clerk-profile [data-localization-key*="navbar.description"] {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+.mise-clerk-profile-page,
+.mise-clerk-profile .cl-pageScrollBox,
+.mise-clerk-profile-scroll {
+  border-inline-start: 1px solid transparent !important;
+}
+
+/* Detect Chrome autofill on Clerk "new password" fields so we can clear it */
+@keyframes mise-on-autofill {
+  from {
+    opacity: 0.99;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.mise-clerk-profile input.mise-pw-new:-webkit-autofill,
+.mise-clerk-profile input[autocomplete="new-password"]:-webkit-autofill {
+  animation-name: mise-on-autofill !important;
+}
+
+/* Hide "Secured by Clerk" under / inside profile modal (UI chrome only) */
+.cl-internal-1wi0bo5,
+.mise-clerk-profile .cl-footer,
+.mise-clerk-profile .cl-badge,
+.mise-clerk-profile [class*="developmentMode"],
+.mise-clerk-profile [data-localization-key*="secured"],
+.mise-clerk-profile [data-localization-key*="Secured"],
+.cl-userProfile-root .cl-footer,
+.cl-userProfile-root [data-localization-key*="secured"],
+.cl-modalContent .cl-footer,
+.cl-modalContent [data-localization-key*="secured"],
+.cl-userProfile-footer,
+.cl-userButtonPopoverFooter,
+.cl-modalContent a[href*="clerk.com"],
+.mise-clerk-profile a[href*="clerk.com"],
+.cl-userButtonPopoverCard a[href*="clerk.com"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Light */
+:root:not([data-theme="dark"]) .mise-clerk-profile.cl-modalContent,
+:root:not([data-theme="dark"]) .mise-clerk-profile-card,
+:root:not([data-theme="dark"]) .mise-clerk-profile-card.cl-card,
+:root:not([data-theme="dark"]) .mise-clerk-profile-page,
+:root:not([data-theme="dark"]) .mise-clerk-profile-nav,
+:root:not([data-theme="dark"]) .mise-clerk-profile-scroll {
+  background: #ffffff !important;
+  color: #0f1a17 !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile.cl-modalContent {
+  border: 1px solid #d7e0db !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-nav,
+:root:not([data-theme="dark"]) .mise-clerk-profile .cl-navbar {
+  background: #f3f6f4 !important;
+  border-inline-end: 1px solid #d7e0db !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-page,
+:root:not([data-theme="dark"]) .mise-clerk-profile .cl-pageScrollBox,
+:root:not([data-theme="dark"]) .mise-clerk-profile-scroll {
+  background: #ffffff !important;
+  border-inline-start: 1px solid #d7e0db !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-section,
+:root:not([data-theme="dark"]) .mise-clerk-profile .cl-profileSection {
+  background: #f8faf9 !important;
+  border-color: #d7e0db !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-section-header,
+:root:not([data-theme="dark"]) .mise-clerk-profile .cl-profileSectionHeader {
+  border-bottom-color: #d7e0db !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-title,
+:root:not([data-theme="dark"]) .mise-clerk-profile-title.cl-headerTitle,
+:root:not([data-theme="dark"]) .mise-clerk-profile-section-title,
+:root:not([data-theme="dark"])
+  .mise-clerk-profile-section-title.cl-profileSectionTitle {
+  color: #0f1a17 !important;
+  font-size: 1.25rem !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-subtitle,
+:root:not([data-theme="dark"]) .mise-clerk-profile-label,
+:root:not([data-theme="dark"]) .mise-clerk-profile-section-content {
+  color: #3d4f48 !important;
+  font-size: 1rem !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-nav-btn,
+:root:not([data-theme="dark"]) .mise-clerk-profile-menu-btn,
+:root:not([data-theme="dark"]) .mise-clerk-profile-menu-item,
+:root:not([data-theme="dark"]) .mise-clerk-profile-accordion {
+  color: #0f1a17 !important;
+  font-size: 1rem !important;
+  border: 1px solid transparent !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-nav-btn[data-active="true"] {
+  background: #ffffff !important;
+  border-color: #d7e0db !important;
+  color: #0f1a17 !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-input {
+  background: #ffffff !important;
+  border: 1px solid #d7e0db !important;
+  color: #0f1a17 !important;
+  font-size: 1rem !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-close {
+  color: #3d4f48 !important;
+}
+
+:root:not([data-theme="dark"]) .mise-clerk-profile-btn-reset {
+  color: #3d4f48 !important;
+  font-size: 1rem !important;
+}
+
+/* Dark */
+[data-theme="dark"] .mise-clerk-profile.cl-modalContent,
+[data-theme="dark"] .mise-clerk-profile-card,
+[data-theme="dark"] .mise-clerk-profile-card.cl-card {
+  background: #141e1a !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile.cl-modalContent {
+  border: 1px solid rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-nav,
+[data-theme="dark"] .mise-clerk-profile .cl-navbar {
+  background: #0f1916 !important;
+  color: #ffffff !important;
+  border-inline-end: 1px solid rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-page,
+[data-theme="dark"] .mise-clerk-profile .cl-pageScrollBox,
+[data-theme="dark"] .mise-clerk-profile-scroll {
+  background: #141e1a !important;
+  color: #ffffff !important;
+  border-inline-start: 1px solid rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-section,
+[data-theme="dark"] .mise-clerk-profile .cl-profileSection {
+  background: #1a2823 !important;
+  border-color: rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-section-header,
+[data-theme="dark"] .mise-clerk-profile .cl-profileSectionHeader {
+  border-bottom-color: rgb(255 255 255 / 0.12) !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-title,
+[data-theme="dark"] .mise-clerk-profile-title.cl-headerTitle,
+[data-theme="dark"] .mise-clerk-profile-section-title,
+[data-theme="dark"] .mise-clerk-profile-section-title.cl-profileSectionTitle {
+  color: #ffffff !important;
+  font-size: 1.25rem !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-subtitle,
+[data-theme="dark"] .mise-clerk-profile-subtitle.cl-headerSubtitle,
+[data-theme="dark"] .mise-clerk-profile-label,
+[data-theme="dark"] .mise-clerk-profile-label.cl-formFieldLabel,
+[data-theme="dark"] .mise-clerk-profile-section-content,
+[data-theme="dark"]
+  .mise-clerk-profile-section-content.cl-profileSectionContent {
+  color: rgb(255 255 255 / 0.86) !important;
+  font-size: 1rem !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-nav-btn,
+[data-theme="dark"] .mise-clerk-profile-nav-btn.cl-navbarButton,
+[data-theme="dark"] .mise-clerk-profile-menu-btn,
+[data-theme="dark"] .mise-clerk-profile-menu-item,
+[data-theme="dark"] .mise-clerk-profile-accordion,
+[data-theme="dark"] .mise-clerk-profile-accordion.cl-accordionTriggerButton {
+  color: rgb(255 255 255 / 0.92) !important;
+  font-size: 1rem !important;
+  border: 1px solid transparent !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-nav-btn[data-active="true"],
+[data-theme="dark"]
+  .mise-clerk-profile-nav-btn.cl-navbarButton[data-active="true"] {
+  background: #1a3330 !important;
+  border-color: rgb(255 255 255 / 0.14) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-input,
+[data-theme="dark"] .mise-clerk-profile-input.cl-formFieldInput {
+  background: #0f1916 !important;
+  border: 1px solid rgb(255 255 255 / 0.16) !important;
+  color: #ffffff !important;
+  font-size: 1rem !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-close,
+[data-theme="dark"] .mise-clerk-profile-close.cl-modalCloseButton {
+  color: rgb(255 255 255 / 0.88) !important;
+}
+
+[data-theme="dark"] .mise-clerk-profile-btn-reset,
+[data-theme="dark"] .mise-clerk-profile-btn-reset.cl-formButtonReset {
+  color: rgb(255 255 255 / 0.88) !important;
+  font-size: 1rem !important;
+}
+
+.mise-clerk-profile-btn-primary,
+.mise-clerk-profile-btn-primary.cl-formButtonPrimary,
+.mise-clerk-profile-section-btn,
+.mise-clerk-profile-section-btn.cl-profileSectionPrimaryButton {
+  background: #0f766e !important;
+  color: #ffffff !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
 }
 
 .cl-cardBox {
@@ -446,7 +1014,7 @@ html[data-font-size='lg'] {
     0 0 80px rgb(15 118 110 / 0.08);
 }
 
-[data-theme='dark'] .auth-glass-card {
+[data-theme="dark"] .auth-glass-card {
   background: rgb(20 30 26 / 0.78);
   border-color: rgb(45 212 191 / 0.2);
   box-shadow:
@@ -479,7 +1047,11 @@ html[data-font-size='lg'] {
     linear-gradient(rgb(15 118 110 / 0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgb(15 118 110 / 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 75%);
+  mask-image: radial-gradient(
+    ellipse 80% 70% at 50% 50%,
+    black 20%,
+    transparent 75%
+  );
 }
 
 .auth-particle {
@@ -501,7 +1073,11 @@ html[data-font-size='lg'] {
 
 .auth-steam {
   border-radius: 50%;
-  background: radial-gradient(circle, rgb(255 255 255 / 0.35) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 0.35) 0%,
+    transparent 70%
+  );
   filter: blur(24px);
   animation: auth-steam-rise 8s ease-in-out infinite;
 }
@@ -541,8 +1117,56 @@ html[data-font-size='lg'] {
 }
 
 .auth-shimmer {
+  display: inline-block;
   background-size: 200% auto;
   animation: auth-text-shimmer 6s ease-in-out infinite;
+}
+
+.auth-headline-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.06em;
+}
+
+.auth-headline-lead {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  justify-items: start;
+}
+
+.auth-headline-lead-measure {
+  visibility: hidden;
+  grid-area: 1 / 1;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.auth-headline-word {
+  display: block;
+  grid-area: 1 / 1;
+  justify-self: start;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.auth-headline-word > span {
+  display: inline-block;
+}
+
+.auth-headline-tail {
+  display: block;
+  white-space: nowrap;
+}
+
+.auth-headline-from-right {
+  animation: auth-headline-in-right 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-headline-from-left {
+  animation: auth-headline-in-left 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .auth-logo-shimmer {
@@ -652,6 +1276,28 @@ html[data-font-size='lg'] {
   }
 }
 
+@keyframes auth-headline-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-headline-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auth-particle,
   .auth-mesh-a,
@@ -659,6 +1305,9 @@ html[data-font-size='lg'] {
   .auth-mesh-c,
   .auth-steam,
   .auth-card-glow,
+  .auth-headline-word,
+  .auth-headline-from-right,
+  .auth-headline-from-left,
   .auth-shimmer,
   .auth-logo-shimmer {
     animation: none !important;
@@ -671,4 +1320,3 @@ html[data-font-size='lg'] {
     animation-duration: 0.01ms !important;
   }
 }
-

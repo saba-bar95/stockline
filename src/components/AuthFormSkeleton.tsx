@@ -1,7 +1,13 @@
-import { AuthGlassCard } from './AuthScene'
+import { AuthGlassCard } from "./AuthScene";
 
 function Bone({ className }: { className?: string }) {
-  return <div className={['animate-pulse rounded-lg bg-line/80', className].filter(Boolean).join(' ')} />
+  return (
+    <div
+      className={["animate-pulse rounded-lg bg-line/80", className]
+        .filter(Boolean)
+        .join(" ")}
+    />
+  );
 }
 
 /** Placeholder while Clerk hooks load — mirrors the sign-in card layout. */
@@ -32,5 +38,5 @@ export function AuthFormSkeleton() {
         <Bone className="mx-auto h-4 w-48" />
       </div>
     </AuthGlassCard>
-  )
+  );
 }
