@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { usePrefs } from "../preferences/PreferencesContext";
-import { Button } from "./ui";
+import { Button, LoadingState } from "./ui";
 
 export type Column<T> = {
   key: string;
@@ -20,6 +20,7 @@ type Props<T> = {
   rows: T[];
   columns: Column<T>[];
   rowKey: (row: T, index: number) => string | number;
+  loading?: boolean;
   emptyText?: string;
   onRowClick?: (row: T) => void;
   onRowDoubleClick?: (row: T) => void;
@@ -47,6 +48,7 @@ export function DataTable<T>({
   rows,
   columns,
   rowKey,
+  loading = false,
   emptyText,
   onRowClick,
   onRowDoubleClick,
@@ -190,7 +192,13 @@ export function DataTable<T>({
           <tbody
             key={`${safePage}-${pageSize}-${sortKey}-${sortDir}-${filter}`}
           >
-            {pageRows.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-8">
+                  <LoadingState label={t("common.loading")} />
+                </td>
+              </tr>
+            ) : pageRows.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length}

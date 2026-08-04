@@ -23,10 +23,17 @@ type Row = {
 export function ProductsPage() {
   const { t, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("კგ");
 
-  const load = useCallback(() => api<Row[]>("/products").then(setRows), []);
+  const load = useCallback(async () => {
+    try {
+      setRows(await api<Row[]>("/products"));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   useEffect(() => {
     load();
   }, [load]);
@@ -70,6 +77,7 @@ export function ProductsPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="name"
           columns={[

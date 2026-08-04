@@ -22,6 +22,7 @@ export function WriteOffsPage() {
   const [ings, setIngs] = useState<Opt[]>([]);
   const [prods, setProds] = useState<Opt[]>([]);
   const [resale, setResale] = useState<Opt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(today());
   const [kind, setKind] = useState<"Ingredient" | "Product">("Ingredient");
   const [itemId, setItemId] = useState("");
@@ -29,16 +30,20 @@ export function WriteOffsPage() {
   const [note, setNote] = useState("");
 
   const load = useCallback(async () => {
-    const [w, i, p, r] = await Promise.all([
-      api<Row[]>("/write-offs"),
-      api<Opt[]>("/ingredients"),
-      api<Opt[]>("/products"),
-      api<Opt[]>("/resale"),
-    ]);
-    setRows(w);
-    setIngs(i);
-    setProds(p);
-    setResale(r);
+    try {
+      const [w, i, p, r] = await Promise.all([
+        api<Row[]>("/write-offs"),
+        api<Opt[]>("/ingredients"),
+        api<Opt[]>("/products"),
+        api<Opt[]>("/resale"),
+      ]);
+      setRows(w);
+      setIngs(i);
+      setProds(p);
+      setResale(r);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -128,6 +133,7 @@ export function WriteOffsPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="date"
           defaultSortDir="desc"

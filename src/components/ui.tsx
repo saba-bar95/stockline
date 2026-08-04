@@ -120,3 +120,42 @@ export function Button({
     />
   );
 }
+
+export function Spinner({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-block size-5 shrink-0 animate-spin rounded-full border-2 border-teal/20 border-t-teal",
+        className,
+      )}
+      aria-hidden
+    />
+  );
+}
+
+export function LoadingState({
+  label,
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-3 py-6",
+        className,
+      )}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <Spinner className="size-7 border-[2.5px]" />
+      {label ? (
+        <p className="text-sm font-medium tracking-wide text-ink-muted">
+          {label}
+        </p>
+      ) : null}
+    </div>
+  );
+}

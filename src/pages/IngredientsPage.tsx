@@ -20,14 +20,19 @@ type Row = {
 export function IngredientsPage() {
   const { t, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("კგ");
   const [category, setCategory] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    api<Row[]>("/ingredients").then(setRows);
+  const load = useCallback(async () => {
+    try {
+      setRows(await api<Row[]>("/ingredients"));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -116,6 +121,7 @@ export function IngredientsPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           onRowClick={(r) => setHistoryId(r.id)}
           defaultSortKey="name"

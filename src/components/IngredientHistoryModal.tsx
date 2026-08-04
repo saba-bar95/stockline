@@ -4,6 +4,7 @@ import { movementLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { DataTable } from "./DataTable";
 import { Modal } from "./Modal";
+import { LoadingState } from "./ui";
 
 type Movement = {
   date: string;
@@ -42,6 +43,7 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
       setData(null);
       return;
     }
+    setData(null);
     setErr("");
     api<HistoryPayload>(`/ingredients/${ingredientId}/history`)
       .then(setData)
@@ -61,7 +63,7 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
     >
       {err ? <p className="mb-3 text-sm text-danger">{err}</p> : null}
       {!data && !err ? (
-        <p className="text-ink-muted italic">{t("common.loading")}</p>
+        <LoadingState label={t("common.loading")} className="py-10" />
       ) : null}
       {ing && data ? (
         <>

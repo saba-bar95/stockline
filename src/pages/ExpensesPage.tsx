@@ -20,6 +20,7 @@ type Row = {
 export function ExpensesPage() {
   const { t, locale, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(today());
   const [type, setType] = useState("სხვა");
   const [name, setName] = useState("");
@@ -27,7 +28,13 @@ export function ExpensesPage() {
   const [usd, setUsd] = useState("0");
   const [rate, setRate] = useState("2.7");
 
-  const load = useCallback(() => api<Row[]>("/expenses").then(setRows), []);
+  const load = useCallback(async () => {
+    try {
+      setRows(await api<Row[]>("/expenses"));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   useEffect(() => {
     load();
   }, [load]);
@@ -108,6 +115,7 @@ export function ExpensesPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="date"
           defaultSortDir="desc"

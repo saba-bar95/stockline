@@ -21,21 +21,26 @@ export function RecipesPage() {
   const [lines, setLines] = useState<Line[]>([]);
   const [products, setProducts] = useState<Opt[]>([]);
   const [ingredients, setIngredients] = useState<Opt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [productId, setProductId] = useState("");
   const [ingredientId, setIngredientId] = useState("");
   const [qtyVal, setQtyVal] = useState("1");
 
   const load = useCallback(async () => {
-    const [r, p, i] = await Promise.all([
-      api<Line[]>("/recipes"),
-      api<Opt[]>("/products"),
-      api<Opt[]>("/ingredients"),
-    ]);
-    setLines(r);
-    setProducts(p);
-    setIngredients(i);
-    if (!productId && p[0]) setProductId(p[0].id);
-    if (!ingredientId && i[0]) setIngredientId(i[0].id);
+    try {
+      const [r, p, i] = await Promise.all([
+        api<Line[]>("/recipes"),
+        api<Opt[]>("/products"),
+        api<Opt[]>("/ingredients"),
+      ]);
+      setLines(r);
+      setProducts(p);
+      setIngredients(i);
+      if (!productId && p[0]) setProductId(p[0].id);
+      if (!ingredientId && i[0]) setIngredientId(i[0].id);
+    } finally {
+      setLoading(false);
+    }
   }, [productId, ingredientId]);
 
   useEffect(() => {
@@ -109,6 +114,7 @@ export function RecipesPage() {
       <Surface>
         <DataTable
           rows={lines}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="productName"
           columns={[

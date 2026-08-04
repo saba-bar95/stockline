@@ -23,18 +23,23 @@ export function ProductionPage() {
   const { t, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Run[]>([]);
   const [products, setProducts] = useState<Opt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(today());
   const [productId, setProductId] = useState("");
   const [q, setQ] = useState("1");
 
   const load = useCallback(async () => {
-    const [r, p] = await Promise.all([
-      api<Run[]>("/production"),
-      api<Opt[]>("/products"),
-    ]);
-    setRows(r);
-    setProducts(p);
-    if (!productId && p[0]) setProductId(p[0].id);
+    try {
+      const [r, p] = await Promise.all([
+        api<Run[]>("/production"),
+        api<Opt[]>("/products"),
+      ]);
+      setRows(r);
+      setProducts(p);
+      if (!productId && p[0]) setProductId(p[0].id);
+    } finally {
+      setLoading(false);
+    }
   }, [productId]);
 
   useEffect(() => {
@@ -91,6 +96,7 @@ export function ProductionPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="date"
           defaultSortDir="desc"

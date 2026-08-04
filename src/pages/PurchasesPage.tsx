@@ -22,6 +22,7 @@ export function PurchasesPage() {
   const [rows, setRows] = useState<Purchase[]>([]);
   const [ings, setIngs] = useState<Opt[]>([]);
   const [resale, setResale] = useState<Opt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(today());
   const [kind, setKind] = useState<"Ingredient" | "Product">("Ingredient");
   const [itemId, setItemId] = useState("");
@@ -29,14 +30,18 @@ export function PurchasesPage() {
   const [price, setPrice] = useState("0");
 
   const load = useCallback(async () => {
-    const [p, i, r] = await Promise.all([
-      api<Purchase[]>("/purchases"),
-      api<Opt[]>("/ingredients"),
-      api<Opt[]>("/resale"),
-    ]);
-    setRows(p);
-    setIngs(i);
-    setResale(r);
+    try {
+      const [p, i, r] = await Promise.all([
+        api<Purchase[]>("/purchases"),
+        api<Opt[]>("/ingredients"),
+        api<Opt[]>("/resale"),
+      ]);
+      setRows(p);
+      setIngs(i);
+      setResale(r);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -132,6 +137,7 @@ export function PurchasesPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="date"
           defaultSortDir="desc"

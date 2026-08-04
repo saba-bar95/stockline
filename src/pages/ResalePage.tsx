@@ -18,11 +18,18 @@ type Row = {
 export function ResalePage() {
   const { t, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("კგ");
   const [category, setCategory] = useState("");
 
-  const load = useCallback(() => api<Row[]>("/resale").then(setRows), []);
+  const load = useCallback(async () => {
+    try {
+      setRows(await api<Row[]>("/resale"));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   useEffect(() => {
     load();
   }, [load]);
@@ -91,6 +98,7 @@ export function ResalePage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="name"
           columns={[

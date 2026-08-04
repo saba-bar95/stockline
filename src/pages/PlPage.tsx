@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PageHeader, Surface } from "../components/ui";
+import { LoadingState, PageHeader, Surface } from "../components/ui";
 import { api, money } from "../lib/api";
 import { cn } from "../lib/cn";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -108,9 +108,7 @@ export function PlPage() {
       ) : null}
       <Surface>
         {!data ? (
-          <p className="py-8 text-center text-ink-muted italic">
-            {t("common.loading")}
-          </p>
+          <LoadingState label={t("common.loading")} />
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
             <Card title={t("pl.today")} block={data.day} delay={40} />

@@ -22,6 +22,7 @@ export function SalesPage() {
   const [rows, setRows] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Opt[]>([]);
   const [resale, setResale] = useState<Opt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(today());
   const [source, setSource] = useState<"manufactured" | "resale">(
     "manufactured",
@@ -31,14 +32,18 @@ export function SalesPage() {
   const [price, setPrice] = useState("0");
 
   const load = useCallback(async () => {
-    const [s, p, r] = await Promise.all([
-      api<Sale[]>("/sales"),
-      api<Opt[]>("/products"),
-      api<Opt[]>("/resale"),
-    ]);
-    setRows(s);
-    setProducts(p);
-    setResale(r);
+    try {
+      const [s, p, r] = await Promise.all([
+        api<Sale[]>("/sales"),
+        api<Opt[]>("/products"),
+        api<Opt[]>("/resale"),
+      ]);
+      setRows(s);
+      setProducts(p);
+      setResale(r);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -131,6 +136,7 @@ export function SalesPage() {
       <Surface>
         <DataTable
           rows={rows}
+          loading={loading}
           rowKey={(r) => r.id}
           defaultSortKey="date"
           defaultSortDir="desc"

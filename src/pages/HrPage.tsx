@@ -14,6 +14,7 @@ export function HrPage() {
   const { t, locale, numberLocale } = usePrefs();
   const [emps, setEmps] = useState<Emp[]>([]);
   const [pays, setPays] = useState<Pay[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [rate, setRate] = useState("50");
   const [date, setDate] = useState(today());
@@ -21,13 +22,17 @@ export function HrPage() {
   const [amount, setAmount] = useState("50");
 
   const load = useCallback(async () => {
-    const [e, p] = await Promise.all([
-      api<Emp[]>("/employees"),
-      api<Pay[]>("/payroll"),
-    ]);
-    setEmps(e);
-    setPays(p);
-    if (!employeeId && e[0]) setEmployeeId(e[0].id);
+    try {
+      const [e, p] = await Promise.all([
+        api<Emp[]>("/employees"),
+        api<Pay[]>("/payroll"),
+      ]);
+      setEmps(e);
+      setPays(p);
+      if (!employeeId && e[0]) setEmployeeId(e[0].id);
+    } finally {
+      setLoading(false);
+    }
   }, [employeeId]);
 
   useEffect(() => {
@@ -75,6 +80,7 @@ export function HrPage() {
           </div>
           <DataTable
             rows={emps}
+            loading={loading}
             rowKey={(r) => r.id}
             defaultSortKey="name"
             columns={[
@@ -157,6 +163,7 @@ export function HrPage() {
           </div>
           <DataTable
             rows={pays}
+            loading={loading}
             rowKey={(r) => r.id}
             defaultSortKey="date"
             defaultSortDir="desc"
