@@ -1,46 +1,46 @@
-import { useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
-import { cn } from '../lib/cn'
-import { usePrefs } from '../preferences/PreferencesContext'
-import { Button } from './ui'
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { cn } from "../lib/cn";
+import { usePrefs } from "../preferences/PreferencesContext";
+import { Button } from "./ui";
 
 export type Column<T> = {
-  key: string
-  label: string
-  title?: string
-  sortable?: boolean
-  filterable?: boolean
-  sortValue?: (row: T) => string | number | null | undefined
-  filterValue?: (row: T) => string
-  render: (row: T) => ReactNode
-  align?: 'left' | 'right'
-}
+  key: string;
+  label: string;
+  title?: string;
+  sortable?: boolean;
+  filterable?: boolean;
+  sortValue?: (row: T) => string | number | null | undefined;
+  filterValue?: (row: T) => string;
+  render: (row: T) => ReactNode;
+  align?: "left" | "right";
+};
 
 type Props<T> = {
-  rows: T[]
-  columns: Column<T>[]
-  rowKey: (row: T, index: number) => string | number
-  emptyText?: string
-  onRowClick?: (row: T) => void
-  onRowDoubleClick?: (row: T) => void
-  rowClassName?: (row: T) => string | undefined
-  defaultSortKey?: string
-  defaultSortDir?: 'asc' | 'desc'
-  defaultPageSize?: 20 | 30 | 50
-}
+  rows: T[];
+  columns: Column<T>[];
+  rowKey: (row: T, index: number) => string | number;
+  emptyText?: string;
+  onRowClick?: (row: T) => void;
+  onRowDoubleClick?: (row: T) => void;
+  rowClassName?: (row: T) => string | undefined;
+  defaultSortKey?: string;
+  defaultSortDir?: "asc" | "desc";
+  defaultPageSize?: 20 | 30 | 50;
+};
 
-const PAGE_SIZES = [20, 30, 50] as const
+const PAGE_SIZES = [20, 30, 50] as const;
 
 function cmp(
   a: string | number | null | undefined,
   b: string | number | null | undefined,
   locale: string,
 ): number {
-  if (a == null && b == null) return 0
-  if (a == null) return 1
-  if (b == null) return -1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  return String(a).localeCompare(String(b), locale)
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), locale);
 }
 
 export function DataTable<T>({
@@ -52,75 +52,79 @@ export function DataTable<T>({
   onRowDoubleClick,
   rowClassName,
   defaultSortKey,
-  defaultSortDir = 'asc',
+  defaultSortDir = "asc",
   defaultPageSize = 20,
 }: Props<T>) {
-  const { t, numberLocale } = usePrefs()
-  const [filter, setFilter] = useState('')
+  const { t, numberLocale } = usePrefs();
+  const [filter, setFilter] = useState("");
   const [sortKey, setSortKey] = useState(
-    defaultSortKey ?? columns.find((c) => c.sortable !== false)?.key ?? '',
-  )
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(defaultSortDir)
-  const [pageSize, setPageSize] = useState<number>(defaultPageSize)
-  const [page, setPage] = useState(1)
-  const [colFilters, setColFilters] = useState<Record<string, string>>({})
+    defaultSortKey ?? columns.find((c) => c.sortable !== false)?.key ?? "",
+  );
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(defaultSortDir);
+  const [pageSize, setPageSize] = useState<number>(defaultPageSize);
+  const [page, setPage] = useState(1);
+  const [colFilters, setColFilters] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => {
-    const q = filter.trim().toLowerCase()
+    const q = filter.trim().toLowerCase();
     return rows.filter((row) => {
       for (const col of columns) {
-        const cf = colFilters[col.key]?.trim().toLowerCase()
+        const cf = colFilters[col.key]?.trim().toLowerCase();
         if (cf) {
-          const fv = (col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? '')).toLowerCase()
-          if (!fv.includes(cf)) return false
+          const fv = (
+            col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? "")
+          ).toLowerCase();
+          if (!fv.includes(cf)) return false;
         }
       }
-      if (!q) return true
+      if (!q) return true;
       return columns.some((col) => {
-        const fv = (col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? '')).toLowerCase()
-        return fv.includes(q)
-      })
-    })
-  }, [rows, columns, filter, colFilters])
+        const fv = (
+          col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? "")
+        ).toLowerCase();
+        return fv.includes(q);
+      });
+    });
+  }, [rows, columns, filter, colFilters]);
 
   const sorted = useMemo(() => {
-    const col = columns.find((c) => c.key === sortKey)
-    if (!col) return filtered
-    const copy = [...filtered]
-    const sortLocale = numberLocale
+    const col = columns.find((c) => c.key === sortKey);
+    if (!col) return filtered;
+    const copy = [...filtered];
+    const sortLocale = numberLocale;
     copy.sort((a, b) => {
-      const d = cmp(col.sortValue?.(a), col.sortValue?.(b), sortLocale)
-      return sortDir === 'asc' ? d : -d
-    })
-    return copy
-  }, [filtered, columns, sortKey, sortDir, numberLocale])
+      const d = cmp(col.sortValue?.(a), col.sortValue?.(b), sortLocale);
+      return sortDir === "asc" ? d : -d;
+    });
+    return copy;
+  }, [filtered, columns, sortKey, sortDir, numberLocale]);
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
-  const safePage = Math.min(page, totalPages)
-  const pageRows = sorted.slice((safePage - 1) * pageSize, safePage * pageSize)
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   function toggleSort(key: string) {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
-      setSortKey(key)
-      setSortDir('asc')
+      setSortKey(key);
+      setSortDir("asc");
     }
-    setPage(1)
+    setPage(1);
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <label className="field mb-0 min-w-0 flex-1 sm:max-w-sm">
-          {t('common.search')}
+          {t("common.search")}
           <input
             type="search"
             className="ui-input"
-            placeholder={t('common.searchPlaceholder')}
+            placeholder={t("common.searchPlaceholder")}
             value={filter}
             onChange={(e) => {
-              setFilter(e.target.value)
-              setPage(1)
+              setFilter(e.target.value);
+              setPage(1);
             }}
           />
         </label>
@@ -131,27 +135,30 @@ export function DataTable<T>({
           <thead>
             <tr className="border-b border-line bg-teal-soft/60">
               {columns.map((col) => {
-                const full = col.title ?? col.label
-                const sortable = col.sortable !== false
-                const active = sortKey === col.key
+                const full = col.title ?? col.label;
+                const sortable = col.sortable !== false;
+                const active = sortKey === col.key;
                 return (
                   <th
                     key={col.key}
                     title={full}
                     onClick={sortable ? () => toggleSort(col.key) : undefined}
                     className={cn(
-                      'px-3 py-3 text-xs font-semibold tracking-wide text-ink-soft uppercase',
-                      sortable && 'cursor-pointer select-none hover:text-teal-deep',
-                      active && 'text-teal-deep',
-                      col.align === 'right' && 'text-right',
+                      "px-3 py-3 text-xs font-semibold tracking-wide text-ink-soft uppercase",
+                      sortable &&
+                        "cursor-pointer select-none hover:text-teal-deep",
+                      active && "text-teal-deep",
+                      col.align === "right" && "text-right",
                     )}
                   >
                     {col.label}
                     {sortable && active ? (
-                      <span className="ml-1 normal-case">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                      <span className="ml-1 normal-case">
+                        {sortDir === "asc" ? "↑" : "↓"}
+                      </span>
                     ) : null}
                   </th>
-                )
+                );
               })}
             </tr>
             <tr className="border-b border-line bg-paper/80">
@@ -161,13 +168,18 @@ export function DataTable<T>({
                     <input
                       type="search"
                       className="ui-input h-8 text-sm"
-                      aria-label={t('common.filterCol', { label: col.title ?? col.label })}
+                      aria-label={t("common.filterCol", {
+                        label: col.title ?? col.label,
+                      })}
                       title={col.title ?? col.label}
-                      placeholder={t('common.filter')}
-                      value={colFilters[col.key] ?? ''}
+                      placeholder={t("common.filter")}
+                      value={colFilters[col.key] ?? ""}
                       onChange={(e) => {
-                        setColFilters((prev) => ({ ...prev, [col.key]: e.target.value }))
-                        setPage(1)
+                        setColFilters((prev) => ({
+                          ...prev,
+                          [col.key]: e.target.value,
+                        }));
+                        setPage(1);
                       }}
                     />
                   ) : null}
@@ -175,11 +187,16 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody key={`${safePage}-${pageSize}-${sortKey}-${sortDir}-${filter}`}>
+          <tbody
+            key={`${safePage}-${pageSize}-${sortKey}-${sortDir}-${filter}`}
+          >
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-ink-muted italic">
-                  {emptyText ?? t('common.empty')}
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-10 text-center text-ink-muted italic"
+                >
+                  {emptyText ?? t("common.empty")}
                 </td>
               </tr>
             ) : (
@@ -187,11 +204,13 @@ export function DataTable<T>({
                 <tr
                   key={rowKey(row, (safePage - 1) * pageSize + index)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
+                  onDoubleClick={
+                    onRowDoubleClick ? () => onRowDoubleClick(row) : undefined
+                  }
                   className={cn(
-                    'table-row-anim border-b border-line/80 last:border-0',
-                    (onRowClick || onRowDoubleClick) && 'cursor-pointer',
-                    'transition-colors duration-150 hover:bg-teal-soft/40',
+                    "table-row-anim border-b border-line/80 last:border-0",
+                    (onRowClick || onRowDoubleClick) && "cursor-pointer",
+                    "transition-colors duration-150 hover:bg-teal-soft/40",
                     rowClassName?.(row),
                   )}
                   style={{ animationDelay: `${Math.min(index, 12) * 18}ms` }}
@@ -200,8 +219,8 @@ export function DataTable<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        'px-3 py-2.5 tabular-nums text-ink',
-                        col.align === 'right' && 'text-right',
+                        "px-3 py-2.5 tabular-nums text-ink",
+                        col.align === "right" && "text-right",
                       )}
                     >
                       {col.render(row)}
@@ -218,11 +237,11 @@ export function DataTable<T>({
         <div className="flex flex-wrap items-center gap-3">
           <select
             className="ui-input w-[4.5rem]"
-            aria-label={t('common.perPage')}
+            aria-label={t("common.perPage")}
             value={pageSize}
             onChange={(e) => {
-              setPageSize(Number(e.target.value))
-              setPage(1)
+              setPageSize(Number(e.target.value));
+              setPage(1);
             }}
           >
             {PAGE_SIZES.map((n) => (
@@ -233,14 +252,19 @@ export function DataTable<T>({
           </select>
           <p className="text-sm text-ink-muted tabular-nums">
             {sorted.length === 0
-              ? '0'
+              ? "0"
               : `${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, sorted.length)}`}
             <span className="text-ink-muted/70"> / {sorted.length}</span>
           </p>
         </div>
 
         <div className="flex items-center justify-center gap-2 sm:justify-end">
-          <Button variant="secondary" size="sm" disabled={safePage <= 1} onClick={() => setPage(1)}>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={safePage <= 1}
+            onClick={() => setPage(1)}
+          >
             «
           </Button>
           <Button
@@ -252,7 +276,7 @@ export function DataTable<T>({
             ‹
           </Button>
           <span className="min-w-28 text-center text-sm text-ink-soft">
-            {t('common.page', { page: safePage, total: totalPages })}
+            {t("common.page", { page: safePage, total: totalPages })}
           </span>
           <Button
             variant="secondary"
@@ -273,5 +297,5 @@ export function DataTable<T>({
         </div>
       </div>
     </div>
-  )
+  );
 }

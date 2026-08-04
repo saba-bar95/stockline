@@ -1,72 +1,76 @@
-import { useCallback, useEffect, useState } from 'react'
-import { DataTable } from '../components/DataTable'
-import { ModalForm } from '../components/ModalForm'
-import { Button, PageHeader, Surface } from '../components/ui'
-import { api, qty } from '../lib/api'
-import { usePrefs } from '../preferences/PreferencesContext'
+import { useCallback, useEffect, useState } from "react";
+import { DataTable } from "../components/DataTable";
+import { ModalForm } from "../components/ModalForm";
+import { Button, PageHeader, Surface } from "../components/ui";
+import { api, qty } from "../lib/api";
+import { usePrefs } from "../preferences/PreferencesContext";
 
 type Line = {
-  id: number
-  productId: string
-  ingredientId: string
-  qty: number
-  productName: string
-  ingredientName: string
-  unit: string
-}
-type Opt = { id: string; name: string }
+  id: number;
+  productId: string;
+  ingredientId: string;
+  qty: number;
+  productName: string;
+  ingredientName: string;
+  unit: string;
+};
+type Opt = { id: string; name: string };
 
 export function RecipesPage() {
-  const { t, numberLocale } = usePrefs()
-  const [lines, setLines] = useState<Line[]>([])
-  const [products, setProducts] = useState<Opt[]>([])
-  const [ingredients, setIngredients] = useState<Opt[]>([])
-  const [productId, setProductId] = useState('')
-  const [ingredientId, setIngredientId] = useState('')
-  const [qtyVal, setQtyVal] = useState('1')
+  const { t, numberLocale } = usePrefs();
+  const [lines, setLines] = useState<Line[]>([]);
+  const [products, setProducts] = useState<Opt[]>([]);
+  const [ingredients, setIngredients] = useState<Opt[]>([]);
+  const [productId, setProductId] = useState("");
+  const [ingredientId, setIngredientId] = useState("");
+  const [qtyVal, setQtyVal] = useState("1");
 
   const load = useCallback(async () => {
     const [r, p, i] = await Promise.all([
-      api<Line[]>('/recipes'),
-      api<Opt[]>('/products'),
-      api<Opt[]>('/ingredients'),
-    ])
-    setLines(r)
-    setProducts(p)
-    setIngredients(i)
-    if (!productId && p[0]) setProductId(p[0].id)
-    if (!ingredientId && i[0]) setIngredientId(i[0].id)
-  }, [productId, ingredientId])
+      api<Line[]>("/recipes"),
+      api<Opt[]>("/products"),
+      api<Opt[]>("/ingredients"),
+    ]);
+    setLines(r);
+    setProducts(p);
+    setIngredients(i);
+    if (!productId && p[0]) setProductId(p[0].id);
+    if (!ingredientId && i[0]) setIngredientId(i[0].id);
+  }, [productId, ingredientId]);
 
   useEffect(() => {
-    load()
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   return (
     <>
       <PageHeader
-        title={t('recipes.title')}
-        description={t('recipes.description')}
+        title={t("recipes.title")}
+        description={t("recipes.description")}
         actions={
           <ModalForm
-            title={t('recipes.newTitle')}
-            triggerLabel={t('common.add')}
+            title={t("recipes.newTitle")}
+            triggerLabel={t("common.add")}
             onSubmit={async () => {
-              await api('/recipes', {
-                method: 'POST',
+              await api("/recipes", {
+                method: "POST",
                 body: JSON.stringify({
                   productId,
                   ingredientId,
                   qty: Number(qtyVal),
                 }),
-              })
-              load()
+              });
+              load();
             }}
           >
             <label className="field">
-              {t('common.product')}
-              <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
+              {t("common.product")}
+              <select
+                value={productId}
+                onChange={(e) => setProductId(e.target.value)}
+                required
+              >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -75,7 +79,7 @@ export function RecipesPage() {
               </select>
             </label>
             <label className="field">
-              {t('common.ingredient')}
+              {t("common.ingredient")}
               <select
                 value={ingredientId}
                 onChange={(e) => setIngredientId(e.target.value)}
@@ -89,7 +93,7 @@ export function RecipesPage() {
               </select>
             </label>
             <label className="field">
-              {t('common.qty')}
+              {t("common.qty")}
               <input
                 type="number"
                 step="any"
@@ -109,37 +113,37 @@ export function RecipesPage() {
           defaultSortKey="productName"
           columns={[
             {
-              key: 'productName',
-              label: t('common.product'),
+              key: "productName",
+              label: t("common.product"),
               sortValue: (r) => r.productName,
               filterValue: (r) => r.productName,
               render: (r) => r.productName,
             },
             {
-              key: 'ingredientName',
-              label: t('common.ingredient'),
+              key: "ingredientName",
+              label: t("common.ingredient"),
               sortValue: (r) => r.ingredientName,
               filterValue: (r) => r.ingredientName,
               render: (r) => r.ingredientName,
             },
             {
-              key: 'qty',
-              label: t('common.qty'),
-              align: 'right',
+              key: "qty",
+              label: t("common.qty"),
+              align: "right",
               sortValue: (r) => r.qty,
               filterValue: (r) => String(r.qty),
               render: (r) => qty(r.qty, numberLocale),
             },
             {
-              key: 'unit',
-              label: t('common.unit'),
+              key: "unit",
+              label: t("common.unit"),
               sortValue: (r) => r.unit,
               filterValue: (r) => r.unit,
               render: (r) => r.unit,
             },
             {
-              key: 'actions',
-              label: '',
+              key: "actions",
+              label: "",
               sortable: false,
               filterable: false,
               render: (r) => (
@@ -147,11 +151,11 @@ export function RecipesPage() {
                   variant="ghost"
                   size="sm"
                   onClick={async () => {
-                    await api(`/recipes/${r.id}`, { method: 'DELETE' })
-                    load()
+                    await api(`/recipes/${r.id}`, { method: "DELETE" });
+                    load();
                   }}
                 >
-                  {t('common.delete')}
+                  {t("common.delete")}
                 </Button>
               ),
             },
@@ -159,5 +163,5 @@ export function RecipesPage() {
         />
       </Surface>
     </>
-  )
+  );
 }

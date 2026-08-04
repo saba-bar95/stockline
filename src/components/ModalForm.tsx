@@ -1,37 +1,37 @@
-import { useEffect, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
-import { useT } from '../preferences/PreferencesContext'
-import { Modal } from './Modal'
-import { Button } from './ui'
+import { useEffect, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
+import { useT } from "../preferences/PreferencesContext";
+import { Modal } from "./Modal";
+import { Button } from "./ui";
 
 type Props = {
-  title: string
-  triggerLabel: string
-  children: ReactNode
-  onSubmit: () => Promise<void> | void
-}
+  title: string;
+  triggerLabel: string;
+  children: ReactNode;
+  onSubmit: () => Promise<void> | void;
+};
 
 export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
-  const t = useT()
-  const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
-    if (!open) setErr('')
-  }, [open])
+    if (!open) setErr("");
+  }, [open]);
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setErr('')
+    e.preventDefault();
+    setBusy(true);
+    setErr("");
     try {
-      await onSubmit()
-      setOpen(false)
+      await onSubmit();
+      setOpen(false);
     } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : t('common.error'))
+      setErr(ex instanceof Error ? ex.message : t("common.error"));
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -44,14 +44,14 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
           {err ? <p className="mt-3 text-sm text-danger">{err}</p> : null}
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setOpen(false)}>
-              {t('common.cancel')}
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy ? t('common.saving') : t('common.add')}
+              {busy ? t("common.saving") : t("common.add")}
             </Button>
           </div>
         </form>
       </Modal>
     </>
-  )
+  );
 }

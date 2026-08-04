@@ -7,11 +7,17 @@
     <title>Mise</title>
     <script>
       try {
-        var p = JSON.parse(localStorage.getItem('mise-prefs') || localStorage.getItem('mza-prefs') || '{}')
-        if (p.theme === 'dark' || p.theme === 'light') document.documentElement.dataset.theme = p.theme
-        if (p.fontSize === 'sm' || p.fontSize === 'md' || p.fontSize === 'lg')
-          document.documentElement.dataset.fontSize = p.fontSize
-        if (p.locale === 'en' || p.locale === 'ka') document.documentElement.lang = p.locale
+        var p = JSON.parse(
+          localStorage.getItem("mise-prefs") ||
+            localStorage.getItem("mza-prefs") ||
+            "{}",
+        );
+        if (p.theme === "dark" || p.theme === "light")
+          document.documentElement.dataset.theme = p.theme;
+        if (p.fontSize === "sm" || p.fontSize === "md" || p.fontSize === "lg")
+          document.documentElement.dataset.fontSize = p.fontSize;
+        if (p.locale === "en" || p.locale === "ka")
+          document.documentElement.lang = p.locale;
       } catch (e) {}
     </script>
   </head>

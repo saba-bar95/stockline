@@ -19,8 +19,8 @@ npm run db:push
 npm run dev
 ```
 
-- Web: http://localhost:5173  
-- API: http://localhost:3001/api/health  
+- Web: http://localhost:5173
+- API: http://localhost:3001/api/health
 
 Without `CLERK_SECRET_KEY` / `VITE_CLERK_PUBLISHABLE_KEY`, the API uses a local-dev organization and the UI skips sign-in. Good for offline work.
 

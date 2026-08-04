@@ -1,34 +1,34 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import * as schema from './schema.ts'
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import * as schema from "./schema.ts";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dataDir = path.resolve(__dirname, '../../data')
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dataDir = path.resolve(__dirname, "../../data");
 
-const rawUrl = process.env.DATABASE_URL
-const isMemory = Boolean(rawUrl?.includes(':memory:'))
+const rawUrl = process.env.DATABASE_URL;
+const isMemory = Boolean(rawUrl?.includes(":memory:"));
 
 if (!isMemory) {
-  fs.mkdirSync(dataDir, { recursive: true })
+  fs.mkdirSync(dataDir, { recursive: true });
 }
 
 function resolveDbPath(): string {
-  if (!rawUrl) return path.join(dataDir, 'mise.sqlite')
-  if (rawUrl.startsWith('file:')) return rawUrl.slice(5)
-  return rawUrl
+  if (!rawUrl) return path.join(dataDir, "mise.sqlite");
+  if (rawUrl.startsWith("file:")) return rawUrl.slice(5);
+  return rawUrl;
 }
 
-const dbPath = resolveDbPath()
+const dbPath = resolveDbPath();
 
-const sqlite = new Database(dbPath)
-sqlite.pragma('journal_mode = WAL')
-sqlite.pragma('foreign_keys = ON')
+const sqlite = new Database(dbPath);
+sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("foreign_keys = ON");
 
-export const db = drizzle(sqlite, { schema })
-export const rawSqlite = sqlite
+export const db = drizzle(sqlite, { schema });
+export const rawSqlite = sqlite;
 
 export function migrate() {
   // Fresh multi-tenant schema. Legacy mza.sqlite is not auto-migrated.
@@ -161,5 +161,5 @@ export function migrate() {
       rate REAL NOT NULL DEFAULT 0
     );
     CREATE INDEX IF NOT EXISTS expenses_org_idx ON expenses(organization_id);
-  `)
+  `);
 }
