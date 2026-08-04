@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DateField } from '../components/DateField'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty, today } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Run = {
   id: number
@@ -18,6 +20,7 @@ type Run = {
 type Opt = { id: string; name: string }
 
 export function ProductionPage() {
+  const { t, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Run[]>([])
   const [products, setProducts] = useState<Opt[]>([])
   const [date, setDate] = useState(today())
@@ -39,12 +42,12 @@ export function ProductionPage() {
   return (
     <>
       <PageHeader
-        title="წარმოება"
-        description="დღიური რაოდენობა — ინგრედიენტები იკლებს რეცეპტის მიხედვით; ზედნადები იმ დღის პულიდან ნაწილდება."
+        title={t('production.title')}
+        description={t('production.description')}
         actions={
           <ModalForm
-            title="ახალი წარმოება"
-            triggerLabel="დამატება"
+            title={t('production.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/production', {
                 method: 'POST',
@@ -53,12 +56,12 @@ export function ProductionPage() {
               load()
             }}
           >
+            <div className="field">
+              <span>{t('common.date')}</span>
+              <DateField value={date} onChange={setDate} />
+            </div>
             <label className="field">
-              თარიღი
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </label>
-            <label className="field">
-              პროდუქტი
+              {t('common.product')}
               <select value={productId} onChange={(e) => setProductId(e.target.value)}>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -68,7 +71,7 @@ export function ProductionPage() {
               </select>
             </label>
             <label className="field">
-              რაოდენობა
+              {t('common.qty')}
               <input type="number" step="any" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
           </ModalForm>
@@ -83,62 +86,62 @@ export function ProductionPage() {
           columns={[
             {
               key: 'date',
-              label: 'თარიღი',
+              label: t('common.date'),
               sortValue: (r) => r.date,
               filterValue: (r) => r.date,
               render: (r) => r.date,
             },
             {
               key: 'productName',
-              label: 'პროდუქტი',
+              label: t('common.product'),
               sortValue: (r) => r.productName,
               filterValue: (r) => `${r.productName} ${r.productId}`,
               render: (r) => r.productName,
             },
             {
               key: 'qty',
-              label: 'რაოდ.',
-              title: 'რაოდენობა',
+              label: t('common.qtyShort'),
+              title: t('common.qty'),
               align: 'right',
               sortValue: (r) => r.qty,
               filterValue: (r) => String(r.qty),
-              render: (r) => qty(r.qty),
+              render: (r) => qty(r.qty, numberLocale),
             },
             {
               key: 'unitCost',
-              label: 'ერთ. თვით.',
-              title: 'ინგრედიენტის თვითღირებულება / ერთეული (სნეპშოტი)',
+              label: t('production.unitCost'),
+              title: t('production.unitCostFull'),
               align: 'right',
               sortValue: (r) => r.unitCost,
               filterValue: (r) => String(r.unitCost),
-              render: (r) => money(r.unitCost),
+              render: (r) => money(r.unitCost, numberLocale),
             },
             {
               key: 'ingredientCost',
-              label: 'ინგრედ. სულ',
-              title: 'ინგრედიენტის ღირებულება სულ',
+              label: t('production.ingTotal'),
+              title: t('production.ingTotalFull'),
               align: 'right',
               sortValue: (r) => r.ingredientCost,
               filterValue: (r) => String(r.ingredientCost),
-              render: (r) => money(r.ingredientCost),
+              render: (r) => money(r.ingredientCost, numberLocale),
             },
             {
               key: 'overheadCost',
-              label: 'ზედნადები',
-              title: 'განაწილებული ზედნადები',
+              label: t('production.overhead'),
+              title: t('production.overheadFull'),
               align: 'right',
               sortValue: (r) => r.overheadCost,
               filterValue: (r) => String(r.overheadCost),
-              render: (r) => money(r.overheadCost),
+              render: (r) => money(r.overheadCost, numberLocale),
             },
             {
               key: 'fullCost',
-              label: 'სრული ღირ.',
-              title: 'სრული თვითღირებულება',
+              label: t('production.fullCost'),
+              title: t('production.fullCostFull'),
               align: 'right',
               sortValue: (r) => r.fullCost,
               filterValue: (r) => String(r.fullCost),
-              render: (r) => money(r.fullCost),
+              render: (r) => money(r.fullCost, numberLocale),
             },
           ]}
         />

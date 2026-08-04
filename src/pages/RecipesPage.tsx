@@ -3,6 +3,7 @@ import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { Button, PageHeader, Surface } from '../components/ui'
 import { api, qty } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Line = {
   id: number
@@ -16,6 +17,7 @@ type Line = {
 type Opt = { id: string; name: string }
 
 export function RecipesPage() {
+  const { t, numberLocale } = usePrefs()
   const [lines, setLines] = useState<Line[]>([])
   const [products, setProducts] = useState<Opt[]>([])
   const [ingredients, setIngredients] = useState<Opt[]>([])
@@ -44,12 +46,12 @@ export function RecipesPage() {
   return (
     <>
       <PageHeader
-        title="რეცეპტები"
-        description="1 ერთეულ პროდუქტზე რამდენი ინგრედიენტი სჭირდება."
+        title={t('recipes.title')}
+        description={t('recipes.description')}
         actions={
           <ModalForm
-            title="რეცეპტის ხაზი"
-            triggerLabel="დამატება"
+            title={t('recipes.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/recipes', {
                 method: 'POST',
@@ -63,7 +65,7 @@ export function RecipesPage() {
             }}
           >
             <label className="field">
-              პროდუქტი
+              {t('common.product')}
               <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -73,7 +75,7 @@ export function RecipesPage() {
               </select>
             </label>
             <label className="field">
-              ინგრედიენტი
+              {t('common.ingredient')}
               <select
                 value={ingredientId}
                 onChange={(e) => setIngredientId(e.target.value)}
@@ -87,7 +89,7 @@ export function RecipesPage() {
               </select>
             </label>
             <label className="field">
-              რაოდენობა
+              {t('common.qty')}
               <input
                 type="number"
                 step="any"
@@ -108,29 +110,29 @@ export function RecipesPage() {
           columns={[
             {
               key: 'productName',
-              label: 'პროდუქტი',
+              label: t('common.product'),
               sortValue: (r) => r.productName,
               filterValue: (r) => r.productName,
               render: (r) => r.productName,
             },
             {
               key: 'ingredientName',
-              label: 'ინგრედიენტი',
+              label: t('common.ingredient'),
               sortValue: (r) => r.ingredientName,
               filterValue: (r) => r.ingredientName,
               render: (r) => r.ingredientName,
             },
             {
               key: 'qty',
-              label: 'რაოდენობა',
+              label: t('common.qty'),
               align: 'right',
               sortValue: (r) => r.qty,
               filterValue: (r) => String(r.qty),
-              render: (r) => qty(r.qty),
+              render: (r) => qty(r.qty, numberLocale),
             },
             {
               key: 'unit',
-              label: 'ერთეული',
+              label: t('common.unit'),
               sortValue: (r) => r.unit,
               filterValue: (r) => r.unit,
               render: (r) => r.unit,
@@ -149,7 +151,7 @@ export function RecipesPage() {
                     load()
                   }}
                 >
-                  წაშლა
+                  {t('common.delete')}
                 </Button>
               ),
             },

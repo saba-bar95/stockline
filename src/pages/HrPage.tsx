@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DateField } from '../components/DateField'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, today } from '../lib/api'
+import { statusLabel } from '../i18n'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Emp = { id: string; name: string; dailyRate: number; status: string }
 type Pay = { id: number; date: string; employeeId: string; amount: number }
 
 export function HrPage() {
+  const { t, locale, numberLocale } = usePrefs()
   const [emps, setEmps] = useState<Emp[]>([])
   const [pays, setPays] = useState<Pay[]>([])
   const [name, setName] = useState('')
@@ -32,16 +36,13 @@ export function HrPage() {
 
   return (
     <>
-      <PageHeader
-        title="თანამშრომლები და ხელფასები"
-        description="ხელფასი შედის დღიურ ზედნადების პულში და წარმოებაზე ნაწილდება."
-      />
+      <PageHeader title={t('hr.title')} description={t('hr.description')} />
       <div className="space-y-6">
-        <Surface title="თანამშრომლები">
+        <Surface title={t('hr.employees')}>
           <div className="mb-4">
             <ModalForm
-              title="ახალი თანამშრომელი"
-              triggerLabel="თანამშრომლის დამატება"
+              title={t('hr.newEmployee')}
+              triggerLabel={t('hr.addEmployee')}
               onSubmit={async () => {
                 await api('/employees', {
                   method: 'POST',
@@ -52,11 +53,11 @@ export function HrPage() {
               }}
             >
               <label className="field">
-                სახელი
+                {t('common.nameShort')}
                 <input value={name} onChange={(e) => setName(e.target.value)} required />
               </label>
               <label className="field">
-                დღიური განაკვეთი
+                {t('common.dailyRate')}
                 <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} />
               </label>
             </ModalForm>
@@ -75,35 +76,35 @@ export function HrPage() {
               },
               {
                 key: 'name',
-                label: 'სახელი',
+                label: t('common.nameShort'),
                 sortValue: (r) => r.name,
                 filterValue: (r) => r.name,
                 render: (r) => r.name,
               },
               {
                 key: 'dailyRate',
-                label: 'განაკვეთი',
+                label: t('common.dailyRateShort'),
                 align: 'right',
                 sortValue: (r) => r.dailyRate,
                 filterValue: (r) => String(r.dailyRate),
-                render: (r) => money(r.dailyRate),
+                render: (r) => money(r.dailyRate, numberLocale),
               },
               {
                 key: 'status',
-                label: 'სტატუსი',
+                label: t('common.status'),
                 sortValue: (r) => r.status,
-                filterValue: (r) => r.status,
-                render: (r) => r.status,
+                filterValue: (r) => statusLabel(locale, r.status),
+                render: (r) => statusLabel(locale, r.status),
               },
             ]}
           />
         </Surface>
 
-        <Surface title="ხელფასის ჩანაწერები">
+        <Surface title={t('hr.payroll')}>
           <div className="mb-4">
             <ModalForm
-              title="ხელფასი"
-              triggerLabel="ხელფასის დამატება"
+              title={t('hr.payrollTitle')}
+              triggerLabel={t('hr.addPayroll')}
               onSubmit={async () => {
                 await api('/payroll', {
                   method: 'POST',
@@ -116,12 +117,12 @@ export function HrPage() {
                 load()
               }}
             >
+              <div className="field">
+                <span>{t('common.date')}</span>
+                <DateField value={date} onChange={setDate} />
+              </div>
               <label className="field">
-                თარიღი
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </label>
-              <label className="field">
-                თანამშრომელი
+                {t('common.employee')}
                 <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
                   {emps.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -131,7 +132,7 @@ export function HrPage() {
                 </select>
               </label>
               <label className="field">
-                თანხა
+                {t('common.amount')}
                 <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
               </label>
             </ModalForm>
@@ -144,25 +145,25 @@ export function HrPage() {
             columns={[
               {
                 key: 'date',
-                label: 'თარიღი',
+                label: t('common.date'),
                 sortValue: (r) => r.date,
                 filterValue: (r) => r.date,
                 render: (r) => r.date,
               },
               {
                 key: 'employeeId',
-                label: 'თანამშრომელი',
+                label: t('common.employee'),
                 sortValue: (r) => empNames[r.employeeId] ?? r.employeeId,
                 filterValue: (r) => `${r.employeeId} ${empNames[r.employeeId] ?? ''}`,
                 render: (r) => empNames[r.employeeId] ?? r.employeeId,
               },
               {
                 key: 'amount',
-                label: 'თანხა',
+                label: t('common.amount'),
                 align: 'right',
                 sortValue: (r) => r.amount,
                 filterValue: (r) => String(r.amount),
-                render: (r) => money(r.amount),
+                render: (r) => money(r.amount, numberLocale),
               },
             ]}
           />

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DateField } from '../components/DateField'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, today } from '../lib/api'
+import { expenseTypeLabel } from '../i18n'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Row = {
   id: number
@@ -15,6 +18,7 @@ type Row = {
 }
 
 export function ExpensesPage() {
+  const { t, locale, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Row[]>([])
   const [date, setDate] = useState(today())
   const [type, setType] = useState('სხვა')
@@ -31,12 +35,12 @@ export function ExpensesPage() {
   return (
     <>
       <PageHeader
-        title="ზედნადები ხარჯები"
-        description="იჯარა და კომუნალური თვის დღეებზე ნაწილდება; სხვა ხარჯები და ხელფასი — დღიურ პულში."
+        title={t('expenses.title')}
+        description={t('expenses.description')}
         actions={
           <ModalForm
-            title="ახალი ხარჯი"
-            triggerLabel="დამატება"
+            title={t('expenses.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/expenses', {
                 method: 'POST',
@@ -53,20 +57,20 @@ export function ExpensesPage() {
               load()
             }}
           >
+            <div className="field">
+              <span>{t('common.date')}</span>
+              <DateField value={date} onChange={setDate} />
+            </div>
             <label className="field">
-              თარიღი
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </label>
-            <label className="field">
-              ტიპი
+              {t('common.type')}
               <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option>ქირა</option>
-                <option>კომუნალური</option>
-                <option>სხვა</option>
+                <option value="ქირა">{t('expenses.typeRent')}</option>
+                <option value="კომუნალური">{t('expenses.typeUtilities')}</option>
+                <option value="სხვა">{t('expenses.typeOther')}</option>
               </select>
             </label>
             <label className="field">
-              დასახელება
+              {t('common.name')}
               <input value={name} onChange={(e) => setName(e.target.value)} />
             </label>
             <label className="field">
@@ -74,11 +78,11 @@ export function ExpensesPage() {
               <input type="number" step="any" value={gel} onChange={(e) => setGel(e.target.value)} />
             </label>
             <label className="field">
-              USD (იჯარისთვის)
+              {t('expenses.usdForRent')}
               <input type="number" step="any" value={usd} onChange={(e) => setUsd(e.target.value)} />
             </label>
             <label className="field">
-              კურსი
+              {t('common.rate')}
               <input
                 type="number"
                 step="any"
@@ -98,21 +102,21 @@ export function ExpensesPage() {
           columns={[
             {
               key: 'date',
-              label: 'თარიღი',
+              label: t('common.date'),
               sortValue: (r) => r.date,
               filterValue: (r) => r.date,
               render: (r) => r.date,
             },
             {
               key: 'type',
-              label: 'ტიპი',
+              label: t('common.type'),
               sortValue: (r) => r.type,
-              filterValue: (r) => r.type,
-              render: (r) => r.type,
+              filterValue: (r) => expenseTypeLabel(locale, r.type),
+              render: (r) => expenseTypeLabel(locale, r.type),
             },
             {
               key: 'name',
-              label: 'სახელი',
+              label: t('common.nameShort'),
               sortValue: (r) => r.name,
               filterValue: (r) => r.name,
               render: (r) => r.name,
@@ -123,7 +127,7 @@ export function ExpensesPage() {
               align: 'right',
               sortValue: (r) => r.gel,
               filterValue: (r) => String(r.gel),
-              render: (r) => money(r.gel),
+              render: (r) => money(r.gel, numberLocale),
             },
             {
               key: 'usd',
@@ -131,15 +135,15 @@ export function ExpensesPage() {
               align: 'right',
               sortValue: (r) => r.usd,
               filterValue: (r) => String(r.usd),
-              render: (r) => money(r.usd),
+              render: (r) => money(r.usd, numberLocale),
             },
             {
               key: 'rate',
-              label: 'კურსი',
+              label: t('common.rate'),
               align: 'right',
               sortValue: (r) => r.rate,
               filterValue: (r) => String(r.rate),
-              render: (r) => money(r.rate),
+              render: (r) => money(r.rate, numberLocale),
             },
           ]}
         />

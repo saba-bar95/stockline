@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import { cn } from '../lib/cn'
+import { useT } from '../preferences/PreferencesContext'
 import { Button } from './ui'
 
 type Props = {
@@ -12,6 +14,7 @@ type Props = {
 }
 
 export function Modal({ title, open, onClose, children, wide }: Props) {
+  const t = useT()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -28,11 +31,12 @@ export function Modal({ title, open, onClose, children, wide }: Props) {
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[3px]"
       role="presentation"
       onClick={onClose}
+      style={{ animation: 'modal-backdrop 0.2s ease both' }}
     >
       <article
         className={cn(
@@ -42,15 +46,25 @@ export function Modal({ title, open, onClose, children, wide }: Props) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
+        style={{ animation: 'modal-panel 0.28s cubic-bezier(0.22, 1, 0.36, 1) both' }}
       >
         <header className="mb-5 flex items-start justify-between gap-3">
-          <h3 className="font-display text-xl font-semibold tracking-tight text-ink">{title}</h3>
-          <Button variant="ghost" size="sm" aria-label="დახურვა" onClick={onClose} className="px-2">
+          <h3 className="font-display text-xl font-semibold tracking-tight text-gradient-heading">
+            {title}
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t('common.close')}
+            onClick={onClose}
+            className="cursor-pointer px-2"
+          >
             ✕
           </Button>
         </header>
         <div>{children}</div>
       </article>
-    </div>
+    </div>,
+    document.body,
   )
 }

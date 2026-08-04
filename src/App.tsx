@@ -1,4 +1,5 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { HrPage } from './pages/HrPage'
@@ -11,25 +12,72 @@ import { RecipesPage } from './pages/RecipesPage'
 import { ResalePage } from './pages/ResalePage'
 import { SalesPage } from './pages/SalesPage'
 import { WriteOffsPage } from './pages/WriteOffsPage'
+import type { Locale } from './i18n'
+import { OrgBootstrap, RequireAuth, SignInPage, SignUpPage, SsoCallbackPage } from './lib/auth'
+import { parseLocale } from './lib/api'
+import { usePrefs } from './preferences/PreferencesContext'
+
+function storedLocale(): Locale {
+  try {
+    const raw = localStorage.getItem('mise-prefs') || localStorage.getItem('mza-prefs')
+    if (!raw) return 'ka'
+    const parsed = JSON.parse(raw) as { locale?: string }
+    return parsed.locale === 'en' ? 'en' : 'ka'
+  } catch {
+    return 'ka'
+  }
+}
+
+function LocaleSync({ children }: { children: ReactNode }) {
+  const { locale: param } = useParams()
+  const locale = parseLocale(param)
+  const { locale: current, setLocale } = usePrefs()
+
+  useEffect(() => {
+    if (locale && locale !== current) setLocale(locale)
+  }, [locale, current, setLocale])
+
+  if (!locale) return <Navigate to={`/${storedLocale()}`} replace />
+  return children
+}
+
+const pageRoutes = (
+  <>
+    <Route index element={<PlPage />} />
+    <Route path="ingredients" element={<IngredientsPage />} />
+    <Route path="resale" element={<ResalePage />} />
+    <Route path="products" element={<ProductsPage />} />
+    <Route path="recipes" element={<RecipesPage />} />
+    <Route path="purchases" element={<PurchasesPage />} />
+    <Route path="production" element={<ProductionPage />} />
+    <Route path="sales" element={<SalesPage />} />
+    <Route path="write-offs" element={<WriteOffsPage />} />
+    <Route path="hr" element={<HrPage />} />
+    <Route path="expenses" element={<ExpensesPage />} />
+  </>
+)
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<PlPage />} />
-          <Route path="ingredients" element={<IngredientsPage />} />
-          <Route path="resale" element={<ResalePage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="recipes" element={<RecipesPage />} />
-          <Route path="purchases" element={<PurchasesPage />} />
-          <Route path="production" element={<ProductionPage />} />
-          <Route path="sales" element={<SalesPage />} />
-          <Route path="write-offs" element={<WriteOffsPage />} />
-          <Route path="hr" element={<HrPage />} />
-          <Route path="expenses" element={<ExpensesPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Navigate to={`/${storedLocale()}`} replace />} />
+      <Route path="/:locale/sign-in/*" element={<SignInPage />} />
+      <Route path="/:locale/sign-up/*" element={<SignUpPage />} />
+      <Route path="/:locale/sso-callback" element={<SsoCallbackPage />} />
+      <Route
+        path="/:locale"
+        element={
+          <LocaleSync>
+            <RequireAuth>
+              <OrgBootstrap />
+              <Layout />
+            </RequireAuth>
+          </LocaleSync>
+        }
+      >
+        {pageRoutes}
+      </Route>
+      <Route path="*" element={<Navigate to={`/${storedLocale()}`} replace />} />
+    </Routes>
   )
 }

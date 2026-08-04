@@ -1,28 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Noto Serif Georgian', 'Noto Sans Georgian', serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'IBM Plex Sans', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', 'Noto Serif Georgian', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-pl: 'Space Grotesk', 'IBM Plex Sans', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #0f1a17;
-  --color-ink-soft: #3d4f48;
-  --color-ink-muted: #6b7c74;
-  --color-paper: #f3f6f4;
-  --color-panel: #ffffff;
-  --color-line: #d7e0db;
-  --color-line-strong: #b8c7bf;
-  --color-teal: #0f766e;
-  --color-teal-deep: #0a4f4a;
-  --color-teal-soft: #e6f4f1;
-  --color-amber: #c2410c;
-  --color-danger: #b91c1c;
-  --color-sidebar: #10221e;
-  --color-sidebar-hover: #1a3330;
-  --color-sidebar-active: #0f766e;
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-teal: var(--teal);
+  --color-teal-deep: var(--teal-deep);
+  --color-teal-soft: var(--teal-soft);
+  --color-amber: var(--amber);
+  --color-danger: var(--danger);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
 
-  --shadow-panel: 0 1px 2px rgb(15 26 23 / 0.04), 0 8px 24px rgb(15 26 23 / 0.06);
+  --shadow-panel: var(--shadow-panel-token);
+}
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --ink: #0f1a17;
+  --ink-soft: #3d4f48;
+  --ink-muted: #6b7c74;
+  --paper: #f3f6f4;
+  --panel: #ffffff;
+  --line: #d7e0db;
+  --line-strong: #b8c7bf;
+  --teal: #0f766e;
+  --teal-deep: #0a4f4a;
+  --teal-soft: #e6f4f1;
+  --amber: #c2410c;
+  --danger: #b91c1c;
+  --sidebar: #10221e;
+  --sidebar-hover: #1a3330;
+  --sidebar-active: #0f766e;
+  --shadow-panel-token: 0 1px 2px rgb(15 26 23 / 0.04), 0 8px 24px rgb(15 26 23 / 0.06);
+  --grad-teal: rgb(15 118 110 / 0.08);
+  --grad-amber: rgb(194 65 12 / 0.05);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #e7efeb;
+  --ink-soft: #b0c0b8;
+  --ink-muted: #7f9188;
+  --paper: #0b1210;
+  --panel: #141e1a;
+  --line: #24332e;
+  --line-strong: #355049;
+  --teal: #2dd4bf;
+  --teal-deep: #5eead4;
+  --teal-soft: #123833;
+  --amber: #fb923c;
+  --danger: #f87171;
+  --sidebar: #060c0a;
+  --sidebar-hover: #12201c;
+  --sidebar-active: #0f766e;
+  --shadow-panel-token: 0 1px 2px rgb(0 0 0 / 0.35), 0 12px 32px rgb(0 0 0 / 0.45);
+  --grad-teal: rgb(45 212 191 / 0.07);
+  --grad-amber: rgb(251 146 60 / 0.05);
+}
+
+html[data-font-size='sm'] {
+  font-size: 14px;
+}
+
+html[data-font-size='md'] {
+  font-size: 16px;
+}
+
+html[data-font-size='lg'] {
+  font-size: 18px;
 }
 
 @layer base {
@@ -33,7 +91,6 @@
   }
 
   html {
-    font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -42,11 +99,11 @@
     margin: 0;
     min-height: 100vh;
     font-family: var(--font-sans);
-    color: var(--color-ink);
+    color: var(--ink);
     background:
-      radial-gradient(1200px 500px at 0% -10%, rgb(15 118 110 / 0.08), transparent 55%),
-      radial-gradient(900px 420px at 100% 0%, rgb(194 65 12 / 0.05), transparent 50%),
-      var(--color-paper);
+      radial-gradient(1200px 500px at 0% -10%, var(--grad-teal), transparent 55%),
+      radial-gradient(900px 420px at 100% 0%, var(--grad-amber), transparent 50%),
+      var(--paper);
   }
 
   #root {
@@ -58,6 +115,60 @@
   select,
   textarea {
     font: inherit;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Soft dissolve + lift for theme toggle */
+@supports (view-transition-name: none) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(root) {
+    z-index: 1;
+    animation: theme-out 0.42s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  ::view-transition-new(root) {
+    z-index: 2;
+    animation: theme-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes theme-out {
+    from {
+      opacity: 1;
+      filter: blur(0) brightness(1);
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      filter: blur(10px) brightness(1.08);
+      transform: scale(1.02);
+    }
+  }
+
+  @keyframes theme-in {
+    from {
+      opacity: 0;
+      filter: blur(12px) brightness(0.92);
+      transform: scale(0.985);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0) brightness(1);
+      transform: scale(1);
+    }
   }
 }
 
@@ -75,9 +186,14 @@
   .field textarea,
   .ui-input {
     @apply h-10 w-full rounded-lg border border-line bg-panel px-3 text-[0.95rem] font-normal text-ink
-      shadow-sm outline-none transition
+      shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200
       placeholder:text-ink-muted/70
       focus:border-teal focus:ring-2 focus:ring-teal/20;
+  }
+
+  .field > span:first-child,
+  .field > label:first-child {
+    @apply text-sm font-medium text-ink-soft;
   }
 
   .field select,
@@ -89,4 +205,192 @@
   .mono {
     @apply font-mono text-[0.85em] tracking-tight text-ink-soft;
   }
+
+  .font-pl,
+  .font-pl .font-display {
+    font-family: var(--font-pl);
+  }
+
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .date-field-trigger {
+    font-weight: 400;
+  }
+
+  .text-gradient-heading {
+    background-image: linear-gradient(
+      120deg,
+      var(--ink) 0%,
+      var(--teal-deep) 42%,
+      var(--teal) 72%,
+      var(--amber) 120%
+    );
+    background-size: 140% 140%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  [data-theme='dark'] .text-gradient-heading {
+    background-image: linear-gradient(
+      120deg,
+      var(--ink) 0%,
+      var(--teal-deep) 35%,
+      var(--teal) 65%,
+      #fdba74 115%
+    );
+  }
+
+  .page-enter {
+    animation: page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .header-enter {
+    animation: header-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .surface-enter {
+    animation: surface-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+  }
+
+  .nav-item {
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .btn-press {
+    transition:
+      transform 0.15s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .btn-press:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .table-row-anim {
+    animation: row-fade 0.28s ease both;
+  }
 }
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes header-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes row-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes settings-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes accent-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes modal-backdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-panel {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Clerk: hide development / branding chrome; keep form light */
+.cl-footer,
+.cl-internal-b3fm6y,
+.cl-badge,
+[class*='cl-footer'],
+[class*='developmentMode'],
+[data-localization-key='developmentMode'] {
+  display: none !important;
+}
+
+.cl-card,
+.cl-main,
+.cl-rootBox {
+  background-color: #ffffff !important;
+  color: #0f1a17 !important;
+}
+
+.cl-cardBox {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
+import { useT } from '../preferences/PreferencesContext'
 import { Modal } from './Modal'
 import { Button } from './ui'
 
@@ -11,6 +12,7 @@ type Props = {
 }
 
 export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -27,7 +29,7 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
       await onSubmit()
       setOpen(false)
     } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : 'შეცდომა')
+      setErr(ex instanceof Error ? ex.message : t('common.error'))
     } finally {
       setBusy(false)
     }
@@ -42,10 +44,10 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
           {err ? <p className="mt-3 text-sm text-danger">{err}</p> : null}
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setOpen(false)}>
-              გაუქმება
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy ? 'ინახება…' : 'დამატება'}
+              {busy ? t('common.saving') : t('common.add')}
             </Button>
           </div>
         </form>

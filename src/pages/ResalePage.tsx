@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Row = {
   id: string
@@ -15,9 +16,10 @@ type Row = {
 }
 
 export function ResalePage() {
+  const { t, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Row[]>([])
   const [name, setName] = useState('')
-  const [unit, setUnit] = useState('ც')
+  const [unit, setUnit] = useState('კგ')
   const [category, setCategory] = useState('')
 
   const load = useCallback(() => api<Row[]>('/resale').then(setRows), [])
@@ -25,35 +27,55 @@ export function ResalePage() {
     load()
   }, [load])
 
+  const categories = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of rows) {
+      const c = r.category.trim()
+      if (c) set.add(c)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'ka'))
+  }, [rows])
+
   return (
     <>
       <PageHeader
-        title="შესყიდული პროდუქცია"
-        description="მზა პროდუქტები, რომლებსაც არ ამზადებ — ყიდულობ და ხელახლა ყიდი."
+        title={t('resale.title')}
+        description={t('resale.description')}
         actions={
           <ModalForm
-            title="ახალი შესყიდული პროდუქტი"
-            triggerLabel="დამატება"
+            title={t('resale.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/resale', {
                 method: 'POST',
                 body: JSON.stringify({ name, unit, category }),
               })
               setName('')
+              setCategory('')
               load()
             }}
           >
             <label className="field">
-              დასახელება
+              {t('common.name')}
               <input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label className="field">
-              ერთეული
+              {t('common.unit')}
               <input value={unit} onChange={(e) => setUnit(e.target.value)} required />
             </label>
             <label className="field">
-              კატეგორია
-              <input value={category} onChange={(e) => setCategory(e.target.value)} />
+              {t('common.category')}
+              <input
+                list="resale-categories"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder={t('ingredients.categoryHint')}
+              />
+              <datalist id="resale-categories">
+                {categories.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </label>
           </ModalForm>
         }
@@ -73,50 +95,50 @@ export function ResalePage() {
             },
             {
               key: 'name',
-              label: 'დასახელება',
+              label: t('common.name'),
               sortValue: (r) => r.name,
               filterValue: (r) => r.name,
               render: (r) => r.name,
             },
             {
               key: 'unit',
-              label: 'ერთეული',
+              label: t('common.unit'),
               sortValue: (r) => r.unit,
               filterValue: (r) => r.unit,
               render: (r) => r.unit,
             },
             {
               key: 'category',
-              label: 'კატეგორია',
+              label: t('common.category'),
               sortValue: (r) => r.category,
               filterValue: (r) => r.category,
               render: (r) => r.category || '—',
             },
             {
               key: 'unitCost',
-              label: 'თვითღირ.',
-              title: 'თვითღირებულება',
+              label: t('resale.unitCost'),
+              title: t('resale.unitCostFull'),
               align: 'right',
               sortValue: (r) => r.unitCost,
               filterValue: (r) => String(r.unitCost),
-              render: (r) => money(r.unitCost),
+              render: (r) => money(r.unitCost, numberLocale),
             },
             {
               key: 'stock',
-              label: 'ნაშთი',
+              label: t('common.stock'),
               align: 'right',
               sortValue: (r) => r.stock,
               filterValue: (r) => String(r.stock),
-              render: (r) => qty(r.stock),
+              render: (r) => qty(r.stock, numberLocale),
             },
             {
               key: 'stockValue',
-              label: 'ნაშთის ღირ.',
-              title: 'ნაშთის ღირებულება',
+              label: t('resale.stockValue'),
+              title: t('resale.stockValueFull'),
               align: 'right',
               sortValue: (r) => r.stockValue,
               filterValue: (r) => String(r.stockValue),
-              render: (r) => money(r.stockValue),
+              render: (r) => money(r.stockValue, numberLocale),
             },
           ]}
         />

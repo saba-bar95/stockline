@@ -3,6 +3,7 @@ import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Row = {
   id: string
@@ -20,9 +21,10 @@ type Row = {
 }
 
 export function ProductsPage() {
+  const { t, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Row[]>([])
   const [name, setName] = useState('')
-  const [unit, setUnit] = useState('ც')
+  const [unit, setUnit] = useState('კგ')
 
   const load = useCallback(() => api<Row[]>('/products').then(setRows), [])
   useEffect(() => {
@@ -32,12 +34,12 @@ export function ProductsPage() {
   return (
     <>
       <PageHeader
-        title="პროდუქცია"
-        description="ნაწარმოები პროდუქტები — თვითღირებულება Excel-ის ლოგიკით (ინგრედიენტი + ზედნადები)."
+        title={t('products.title')}
+        description={t('products.description')}
         actions={
           <ModalForm
-            title="ახალი პროდუქტი"
-            triggerLabel="დამატება"
+            title={t('products.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/products', { method: 'POST', body: JSON.stringify({ name, unit }) })
               setName('')
@@ -45,15 +47,14 @@ export function ProductsPage() {
             }}
           >
             <label className="field">
-              დასახელება
+              {t('common.name')}
               <input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label className="field">
-              ერთეული
+              {t('common.unit')}
               <select value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option>ც</option>
-                <option>კგ</option>
-                <option>ლ</option>
+                <option value="კგ">{t('units.kg')}</option>
+                <option value="ლ">{t('units.l')}</option>
               </select>
             </label>
           </ModalForm>
@@ -74,71 +75,71 @@ export function ProductsPage() {
             },
             {
               key: 'name',
-              label: 'დასახელება',
+              label: t('common.name'),
               sortValue: (r) => r.name,
               filterValue: (r) => r.name,
               render: (r) => r.name,
             },
             {
               key: 'unit',
-              label: 'ერთ.',
-              title: 'ერთეული',
+              label: t('common.unitShort'),
+              title: t('common.unit'),
               sortValue: (r) => r.unit,
               filterValue: (r) => r.unit,
               render: (r) => r.unit,
             },
             {
               key: 'unitCost',
-              label: 'ინგრ./ერთ.',
-              title: 'ინგრედიენტის თვითღირებულება / ერთეული',
+              label: t('products.ingPerUnit'),
+              title: t('products.ingPerUnitFull'),
               align: 'right',
               sortValue: (r) => r.unitCost,
               filterValue: (r) => String(r.unitCost),
-              render: (r) => money(r.unitCost),
+              render: (r) => money(r.unitCost, numberLocale),
             },
             {
               key: 'ohTotal',
-              label: 'ზედნ. სულ',
-              title: 'ზედნადები სულ',
+              label: t('products.ohTotal'),
+              title: t('products.ohTotalFull'),
               align: 'right',
               sortValue: (r) => r.ohTotal,
               filterValue: (r) => String(r.ohTotal),
-              render: (r) => money(r.ohTotal),
+              render: (r) => money(r.ohTotal, numberLocale),
             },
             {
               key: 'fullUnitCost',
-              label: 'სრული თვით.',
-              title: 'სრული თვითღირებულება / ერთეული',
+              label: t('products.fullUnit'),
+              title: t('products.fullUnitFull'),
               align: 'right',
               sortValue: (r) => r.fullUnitCost,
               filterValue: (r) => String(r.fullUnitCost),
-              render: (r) => money(r.fullUnitCost),
+              render: (r) => money(r.fullUnitCost, numberLocale),
             },
             {
               key: 'stock',
-              label: 'ნაშთი',
+              label: t('common.stock'),
               align: 'right',
               sortValue: (r) => r.stock,
               filterValue: (r) => String(r.stock),
-              render: (r) => qty(r.stock),
+              render: (r) => qty(r.stock, numberLocale),
             },
             {
               key: 'stockValue',
-              label: 'ნაშთის ღირ.',
-              title: 'ნაშთის ღირებულება',
+              label: t('products.stockValue'),
+              title: t('products.stockValueFull'),
               align: 'right',
               sortValue: (r) => r.stockValue,
               filterValue: (r) => String(r.stockValue),
-              render: (r) => money(r.stockValue),
+              render: (r) => money(r.stockValue, numberLocale),
             },
             {
               key: 'recommendedPrice',
-              label: 'რეკ. 3×',
-              title: 'რეკომენდებული ფასი (3× სრული თვითღირებულება)',
+              label: t('products.recommended'),
+              title: t('products.recommendedFull'),
               align: 'right',
               sortValue: (r) => r.recommendedPrice,
               filterValue: (r) => String(r.recommendedPrice),
-              render: (r) => money(r.recommendedPrice),
+              render: (r) => money(r.recommendedPrice, numberLocale),
             },
           ]}
         />

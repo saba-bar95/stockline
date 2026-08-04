@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DateField } from '../components/DateField'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty, today } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Purchase = {
   id: number
@@ -16,6 +18,7 @@ type Purchase = {
 type Opt = { id: string; name: string }
 
 export function PurchasesPage() {
+  const { t, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Purchase[]>([])
   const [ings, setIngs] = useState<Opt[]>([])
   const [resale, setResale] = useState<Opt[]>([])
@@ -51,12 +54,12 @@ export function PurchasesPage() {
   return (
     <>
       <PageHeader
-        title="შესყიდვები"
-        description="ინგრედიენტი ან შესყიდული პროდუქტი — ნაშთი და საშუალო ფასი აქედან იზრდება."
+        title={t('purchases.title')}
+        description={t('purchases.description')}
         actions={
           <ModalForm
-            title="ახალი შესყიდვა"
-            triggerLabel="დამატება"
+            title={t('purchases.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/purchases', {
                 method: 'POST',
@@ -71,22 +74,22 @@ export function PurchasesPage() {
               load()
             }}
           >
-            <label className="field">
-              თარიღი
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-            </label>
-            <label className="field">
-              ტიპი
+            <div className="field">
+              <span>{t('common.date')}</span>
+              <DateField value={date} onChange={setDate} required />
+            </div>
+            <div className="field">
+              <span>{t('common.type')}</span>
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as 'Ingredient' | 'Product')}
               >
-                <option value="Ingredient">ინგრედიენტი</option>
-                <option value="Product">შესყიდული პროდუქტი</option>
+                <option value="Ingredient">{t('purchases.kindIngredient')}</option>
+                <option value="Product">{t('purchases.kindProduct')}</option>
               </select>
-            </label>
-            <label className="field">
-              დასახელება
+            </div>
+            <div className="field">
+              <span>{t('common.name')}</span>
               <select value={itemId} onChange={(e) => setItemId(e.target.value)} required>
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -94,20 +97,20 @@ export function PurchasesPage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="field">
-              რაოდენობა
+            </div>
+            <div className="field">
+              <span>{t('common.qty')}</span>
               <input type="number" step="any" value={q} onChange={(e) => setQ(e.target.value)} />
-            </label>
-            <label className="field">
-              ფასი / ერთ.
+            </div>
+            <div className="field">
+              <span>{t('common.pricePerUnit')}</span>
               <input
                 type="number"
                 step="any"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
-            </label>
+            </div>
           </ModalForm>
         }
       />
@@ -120,49 +123,55 @@ export function PurchasesPage() {
           columns={[
             {
               key: 'date',
-              label: 'თარიღი',
+              label: t('common.date'),
               sortValue: (r) => r.date,
               filterValue: (r) => r.date,
               render: (r) => r.date,
             },
             {
               key: 'kind',
-              label: 'ტიპი',
+              label: t('common.type'),
               sortValue: (r) => r.kind,
-              filterValue: (r) => r.kind,
-              render: (r) => (r.kind === 'Ingredient' ? 'ინგრედიენტი' : 'პროდუქტი'),
+              filterValue: (r) =>
+                r.kind === 'Ingredient'
+                  ? t('purchases.kindIngredient')
+                  : t('purchases.kindProductShort'),
+              render: (r) =>
+                r.kind === 'Ingredient'
+                  ? t('purchases.kindIngredient')
+                  : t('purchases.kindProductShort'),
             },
             {
               key: 'itemId',
-              label: 'დასახელება',
+              label: t('common.name'),
               sortValue: (r) => names[r.itemId] ?? r.itemId,
               filterValue: (r) => `${r.itemId} ${names[r.itemId] ?? ''}`,
               render: (r) => names[r.itemId] ?? r.itemId,
             },
             {
               key: 'qty',
-              label: 'რაოდ.',
-              title: 'რაოდენობა',
+              label: t('common.qtyShort'),
+              title: t('common.qty'),
               align: 'right',
               sortValue: (r) => r.qty,
               filterValue: (r) => String(r.qty),
-              render: (r) => qty(r.qty),
+              render: (r) => qty(r.qty, numberLocale),
             },
             {
               key: 'unitPrice',
-              label: 'ფასი',
+              label: t('common.price'),
               align: 'right',
               sortValue: (r) => r.unitPrice,
               filterValue: (r) => String(r.unitPrice),
-              render: (r) => money(r.unitPrice),
+              render: (r) => money(r.unitPrice, numberLocale),
             },
             {
               key: 'total',
-              label: 'ჯამი',
+              label: t('common.total'),
               align: 'right',
               sortValue: (r) => r.total,
               filterValue: (r) => String(r.total),
-              render: (r) => money(r.total),
+              render: (r) => money(r.total, numberLocale),
             },
           ]}
         />

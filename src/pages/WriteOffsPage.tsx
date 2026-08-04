@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DateField } from '../components/DateField'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, qty, today } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Row = {
   id: number
@@ -15,6 +17,7 @@ type Row = {
 type Opt = { id: string; name: string }
 
 export function WriteOffsPage() {
+  const { t, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Row[]>([])
   const [ings, setIngs] = useState<Opt[]>([])
   const [prods, setProds] = useState<Opt[]>([])
@@ -53,12 +56,12 @@ export function WriteOffsPage() {
   return (
     <>
       <PageHeader
-        title="ჩამოწერა"
-        description="გაფუჭებული ან დაკარგული ინგრედიენტი / პროდუქტი."
+        title={t('writeOffs.title')}
+        description={t('writeOffs.description')}
         actions={
           <ModalForm
-            title="ახალი ჩამოწერა"
-            triggerLabel="დამატება"
+            title={t('writeOffs.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/write-offs', {
                 method: 'POST',
@@ -73,22 +76,22 @@ export function WriteOffsPage() {
               load()
             }}
           >
+            <div className="field">
+              <span>{t('common.date')}</span>
+              <DateField value={date} onChange={setDate} />
+            </div>
             <label className="field">
-              თარიღი
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </label>
-            <label className="field">
-              ტიპი
+              {t('common.type')}
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as 'Ingredient' | 'Product')}
               >
-                <option value="Ingredient">ინგრედიენტი</option>
-                <option value="Product">პროდუქტი</option>
+                <option value="Ingredient">{t('writeOffs.kindIngredient')}</option>
+                <option value="Product">{t('writeOffs.kindProduct')}</option>
               </select>
             </label>
             <label className="field">
-              დასახელება
+              {t('common.name')}
               <select value={itemId} onChange={(e) => setItemId(e.target.value)}>
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -98,11 +101,11 @@ export function WriteOffsPage() {
               </select>
             </label>
             <label className="field">
-              რაოდენობა
+              {t('common.qty')}
               <input type="number" step="any" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
             <label className="field">
-              შენიშვნა
+              {t('common.note')}
               <input value={note} onChange={(e) => setNote(e.target.value)} />
             </label>
           </ModalForm>
@@ -117,37 +120,43 @@ export function WriteOffsPage() {
           columns={[
             {
               key: 'date',
-              label: 'თარიღი',
+              label: t('common.date'),
               sortValue: (r) => r.date,
               filterValue: (r) => r.date,
               render: (r) => r.date,
             },
             {
               key: 'kind',
-              label: 'ტიპი',
+              label: t('common.type'),
               sortValue: (r) => r.kind,
-              filterValue: (r) => r.kind,
-              render: (r) => (r.kind === 'Ingredient' ? 'ინგრედიენტი' : 'პროდუქტი'),
+              filterValue: (r) =>
+                r.kind === 'Ingredient'
+                  ? t('writeOffs.kindIngredient')
+                  : t('writeOffs.kindProduct'),
+              render: (r) =>
+                r.kind === 'Ingredient'
+                  ? t('writeOffs.kindIngredient')
+                  : t('writeOffs.kindProduct'),
             },
             {
               key: 'itemId',
-              label: 'დასახელება',
+              label: t('common.name'),
               sortValue: (r) => names[r.itemId] ?? r.itemId,
               filterValue: (r) => `${r.itemId} ${names[r.itemId] ?? ''}`,
               render: (r) => names[r.itemId] ?? r.itemId,
             },
             {
               key: 'qty',
-              label: 'რაოდ.',
-              title: 'რაოდენობა',
+              label: t('common.qtyShort'),
+              title: t('common.qty'),
               align: 'right',
               sortValue: (r) => r.qty,
               filterValue: (r) => String(r.qty),
-              render: (r) => qty(r.qty),
+              render: (r) => qty(r.qty, numberLocale),
             },
             {
               key: 'note',
-              label: 'შენიშვნა',
+              label: t('common.note'),
               sortValue: (r) => r.note,
               filterValue: (r) => r.note,
               render: (r) => r.note || '—',

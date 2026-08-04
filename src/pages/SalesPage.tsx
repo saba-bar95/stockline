@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DateField } from '../components/DateField'
 import { DataTable } from '../components/DataTable'
 import { ModalForm } from '../components/ModalForm'
 import { PageHeader, Surface } from '../components/ui'
 import { api, money, qty, today } from '../lib/api'
+import { usePrefs } from '../preferences/PreferencesContext'
 
 type Sale = {
   id: number
@@ -16,6 +18,7 @@ type Sale = {
 type Opt = { id: string; name: string }
 
 export function SalesPage() {
+  const { t, numberLocale } = usePrefs()
   const [rows, setRows] = useState<Sale[]>([])
   const [products, setProducts] = useState<Opt[]>([])
   const [resale, setResale] = useState<Opt[]>([])
@@ -51,12 +54,12 @@ export function SalesPage() {
   return (
     <>
       <PageHeader
-        title="გაყიდვები"
-        description="ნაწარმოები ან შესყიდული — შემოსავალი და COGS მოგება/ზარალში ჩანს."
+        title={t('sales.title')}
+        description={t('sales.description')}
         actions={
           <ModalForm
-            title="ახალი გაყიდვა"
-            triggerLabel="დამატება"
+            title={t('sales.newTitle')}
+            triggerLabel={t('common.add')}
             onSubmit={async () => {
               await api('/sales', {
                 method: 'POST',
@@ -71,22 +74,22 @@ export function SalesPage() {
               load()
             }}
           >
+            <div className="field">
+              <span>{t('common.date')}</span>
+              <DateField value={date} onChange={setDate} />
+            </div>
             <label className="field">
-              თარიღი
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </label>
-            <label className="field">
-              წყარო
+              {t('common.source')}
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value as 'manufactured' | 'resale')}
               >
-                <option value="manufactured">ნაწარმოები</option>
-                <option value="resale">შესყიდული</option>
+                <option value="manufactured">{t('sales.manufactured')}</option>
+                <option value="resale">{t('sales.resale')}</option>
               </select>
             </label>
             <label className="field">
-              პროდუქტი
+              {t('common.product')}
               <select value={itemId} onChange={(e) => setItemId(e.target.value)}>
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -96,11 +99,11 @@ export function SalesPage() {
               </select>
             </label>
             <label className="field">
-              რაოდენობა
+              {t('common.qty')}
               <input type="number" step="any" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
             <label className="field">
-              გაყიდვის ფასი
+              {t('sales.sellPrice')}
               <input
                 type="number"
                 step="any"
@@ -120,49 +123,51 @@ export function SalesPage() {
           columns={[
             {
               key: 'date',
-              label: 'თარიღი',
+              label: t('common.date'),
               sortValue: (r) => r.date,
               filterValue: (r) => r.date,
               render: (r) => r.date,
             },
             {
               key: 'source',
-              label: 'წყარო',
+              label: t('common.source'),
               sortValue: (r) => r.source,
-              filterValue: (r) => r.source,
-              render: (r) => (r.source === 'manufactured' ? 'ნაწარმოები' : 'შესყიდული'),
+              filterValue: (r) =>
+                r.source === 'manufactured' ? t('sales.manufactured') : t('sales.resale'),
+              render: (r) =>
+                r.source === 'manufactured' ? t('sales.manufactured') : t('sales.resale'),
             },
             {
               key: 'itemId',
-              label: 'დასახელება',
+              label: t('common.name'),
               sortValue: (r) => names[r.itemId] ?? r.itemId,
               filterValue: (r) => `${r.itemId} ${names[r.itemId] ?? ''}`,
               render: (r) => names[r.itemId] ?? r.itemId,
             },
             {
               key: 'qty',
-              label: 'რაოდ.',
-              title: 'რაოდენობა',
+              label: t('common.qtyShort'),
+              title: t('common.qty'),
               align: 'right',
               sortValue: (r) => r.qty,
               filterValue: (r) => String(r.qty),
-              render: (r) => qty(r.qty),
+              render: (r) => qty(r.qty, numberLocale),
             },
             {
               key: 'unitPrice',
-              label: 'ფასი',
+              label: t('common.price'),
               align: 'right',
               sortValue: (r) => r.unitPrice,
               filterValue: (r) => String(r.unitPrice),
-              render: (r) => money(r.unitPrice),
+              render: (r) => money(r.unitPrice, numberLocale),
             },
             {
               key: 'revenue',
-              label: 'შემოსავალი',
+              label: t('sales.revenue'),
               align: 'right',
               sortValue: (r) => r.revenue,
               filterValue: (r) => String(r.revenue),
-              render: (r) => money(r.revenue),
+              render: (r) => money(r.revenue, numberLocale),
             },
           ]}
         />

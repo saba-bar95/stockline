@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, money, qty } from '../lib/api'
+import { movementLabel } from '../i18n'
+import { usePrefs } from '../preferences/PreferencesContext'
 import { DataTable } from './DataTable'
 import { Modal } from './Modal'
 
@@ -31,6 +33,7 @@ type Props = {
 }
 
 export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
+  const { t, locale, numberLocale } = usePrefs()
   const [data, setData] = useState<HistoryPayload | null>(null)
   const [err, setErr] = useState('')
 
@@ -42,20 +45,24 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
     setErr('')
     api<HistoryPayload>(`/ingredients/${ingredientId}/history`)
       .then(setData)
-      .catch((e) => setErr(e instanceof Error ? e.message : 'შეცდომა'))
-  }, [ingredientId])
+      .catch((e) => setErr(e instanceof Error ? e.message : t('common.error')))
+  }, [ingredientId, t])
 
   const ing = data?.ingredient
 
   return (
     <Modal
-      title={ing ? `${ing.name} — მოძრაობის ისტორია` : 'მოძრაობის ისტორია'}
+      title={
+        ing
+          ? t('history.titleNamed', { name: ing.name })
+          : t('history.title')
+      }
       open={!!ingredientId}
       onClose={onClose}
       wide
     >
       {err ? <p className="mb-3 text-sm text-danger">{err}</p> : null}
-      {!data && !err ? <p className="text-ink-muted italic">იტვირთება…</p> : null}
+      {!data && !err ? <p className="text-ink-muted italic">{t('common.loading')}</p> : null}
       {ing && data ? (
         <>
           <div className="mb-5 flex flex-wrap gap-x-5 gap-y-2 rounded-xl bg-paper px-4 py-3 text-sm text-ink-soft">
@@ -63,19 +70,22 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
               ID: <strong className="mono text-ink">{ing.id}</strong>
             </span>
             <span>
-              ერთეული: <strong className="text-ink">{ing.unit}</strong>
+              {t('history.unit')}: <strong className="text-ink">{ing.unit}</strong>
             </span>
             <span>
-              კატეგორია: <strong className="text-ink">{ing.category || '—'}</strong>
+              {t('history.category')}: <strong className="text-ink">{ing.category || '—'}</strong>
             </span>
             <span>
-              საშ. ფასი: <strong className="text-ink">{money(ing.avgCost)}</strong>
+              {t('history.avgPrice')}:{' '}
+              <strong className="text-ink">{money(ing.avgCost, numberLocale)}</strong>
             </span>
             <span>
-              ნაშთი: <strong className="text-ink">{qty(ing.stock)}</strong>
+              {t('history.stock')}:{' '}
+              <strong className="text-ink">{qty(ing.stock, numberLocale)}</strong>
             </span>
             <span>
-              ბოლო შესყიდვა: <strong className="text-ink">{ing.lastPurchaseDate ?? '—'}</strong>
+              {t('history.lastPurchase')}:{' '}
+              <strong className="text-ink">{ing.lastPurchaseDate ?? '—'}</strong>
             </span>
           </div>
           <DataTable
@@ -83,52 +93,52 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
             rowKey={(r, i) => `${r.date}-${r.type}-${r.qty}-${i}`}
             defaultSortKey="date"
             defaultSortDir="desc"
-            emptyText="მოძრაობები არ არის"
+            emptyText={t('history.empty')}
             columns={[
               {
                 key: 'date',
-                label: 'თარიღი',
+                label: t('common.date'),
                 sortValue: (r) => r.date,
                 filterValue: (r) => r.date,
                 render: (r) => r.date,
               },
               {
                 key: 'type',
-                label: 'ტიპი',
-                title: 'შესყიდვა / წარმოება / ჩამოწერა',
+                label: t('common.type'),
+                title: t('history.typeTitle'),
                 sortValue: (r) => r.type,
-                filterValue: (r) => r.type,
-                render: (r) => r.type,
+                filterValue: (r) => movementLabel(locale, r.type),
+                render: (r) => movementLabel(locale, r.type),
               },
               {
                 key: 'qty',
-                label: 'რაოდ.',
-                title: 'რაოდენობა',
+                label: t('common.qtyShort'),
+                title: t('common.qty'),
                 align: 'right',
                 sortValue: (r) => r.qty,
                 filterValue: (r) => String(r.qty),
-                render: (r) => qty(r.qty),
+                render: (r) => qty(r.qty, numberLocale),
               },
               {
                 key: 'unitPrice',
-                label: 'ფასი',
-                title: 'ერთეულის ფასი',
+                label: t('common.price'),
+                title: t('history.unitPrice'),
                 align: 'right',
                 sortValue: (r) => r.unitPrice,
                 filterValue: (r) => String(r.unitPrice),
-                render: (r) => money(r.unitPrice),
+                render: (r) => money(r.unitPrice, numberLocale),
               },
               {
                 key: 'total',
-                label: 'ჯამი',
+                label: t('common.total'),
                 align: 'right',
                 sortValue: (r) => r.total,
                 filterValue: (r) => String(r.total),
-                render: (r) => money(r.total),
+                render: (r) => money(r.total, numberLocale),
               },
               {
                 key: 'note',
-                label: 'შენიშვნა',
+                label: t('common.note'),
                 sortValue: (r) => r.note,
                 filterValue: (r) => r.note,
                 render: (r) => r.note || '—',

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '../lib/cn'
+import { usePrefs } from '../preferences/PreferencesContext'
 import { Button } from './ui'
 
 export type Column<T> = {
@@ -20,6 +21,7 @@ type Props<T> = {
   columns: Column<T>[]
   rowKey: (row: T, index: number) => string | number
   emptyText?: string
+  onRowClick?: (row: T) => void
   onRowDoubleClick?: (row: T) => void
   rowClassName?: (row: T) => string | undefined
   defaultSortKey?: string
@@ -29,25 +31,31 @@ type Props<T> = {
 
 const PAGE_SIZES = [20, 30, 50] as const
 
-function cmp(a: string | number | null | undefined, b: string | number | null | undefined): number {
+function cmp(
+  a: string | number | null | undefined,
+  b: string | number | null | undefined,
+  locale: string,
+): number {
   if (a == null && b == null) return 0
   if (a == null) return 1
   if (b == null) return -1
   if (typeof a === 'number' && typeof b === 'number') return a - b
-  return String(a).localeCompare(String(b), 'ka')
+  return String(a).localeCompare(String(b), locale)
 }
 
 export function DataTable<T>({
   rows,
   columns,
   rowKey,
-  emptyText = 'მონაცემები არ არის',
+  emptyText,
+  onRowClick,
   onRowDoubleClick,
   rowClassName,
   defaultSortKey,
   defaultSortDir = 'asc',
   defaultPageSize = 20,
 }: Props<T>) {
+  const { t, numberLocale } = usePrefs()
   const [filter, setFilter] = useState('')
   const [sortKey, setSortKey] = useState(
     defaultSortKey ?? columns.find((c) => c.sortable !== false)?.key ?? '',
@@ -79,12 +87,13 @@ export function DataTable<T>({
     const col = columns.find((c) => c.key === sortKey)
     if (!col) return filtered
     const copy = [...filtered]
+    const sortLocale = numberLocale
     copy.sort((a, b) => {
-      const d = cmp(col.sortValue?.(a), col.sortValue?.(b))
+      const d = cmp(col.sortValue?.(a), col.sortValue?.(b), sortLocale)
       return sortDir === 'asc' ? d : -d
     })
     return copy
-  }, [filtered, columns, sortKey, sortDir])
+  }, [filtered, columns, sortKey, sortDir, numberLocale])
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
   const safePage = Math.min(page, totalPages)
@@ -103,11 +112,11 @@ export function DataTable<T>({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <label className="field mb-0 min-w-0 flex-1 sm:max-w-sm">
-          ძებნა
+          {t('common.search')}
           <input
             type="search"
             className="ui-input"
-            placeholder="ფილტრი ყველა სვეტში…"
+            placeholder={t('common.searchPlaceholder')}
             value={filter}
             onChange={(e) => {
               setFilter(e.target.value)
@@ -115,31 +124,6 @@ export function DataTable<T>({
             }}
           />
         </label>
-        <div className="flex items-end gap-3">
-          <label className="field mb-0 w-28">
-            გვერდზე
-            <select
-              className="ui-input"
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value))
-                setPage(1)
-              }}
-            >
-              {PAGE_SIZES.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="pb-2 text-sm text-ink-muted tabular-nums">
-            {sorted.length === 0
-              ? '0'
-              : `${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, sorted.length)}`}
-            <span className="text-ink-muted/70"> / {sorted.length}</span>
-          </p>
-        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-line">
@@ -177,9 +161,9 @@ export function DataTable<T>({
                     <input
                       type="search"
                       className="ui-input h-8 text-sm"
-                      aria-label={`ფილტრი: ${col.title ?? col.label}`}
+                      aria-label={t('common.filterCol', { label: col.title ?? col.label })}
                       title={col.title ?? col.label}
-                      placeholder="ფილტრი"
+                      placeholder={t('common.filter')}
                       value={colFilters[col.key] ?? ''}
                       onChange={(e) => {
                         setColFilters((prev) => ({ ...prev, [col.key]: e.target.value }))
@@ -191,24 +175,26 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody key={`${safePage}-${pageSize}-${sortKey}-${sortDir}-${filter}`}>
             {pageRows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-10 text-center text-ink-muted italic">
-                  {emptyText}
+                  {emptyText ?? t('common.empty')}
                 </td>
               </tr>
             ) : (
               pageRows.map((row, index) => (
                 <tr
                   key={rowKey(row, (safePage - 1) * pageSize + index)}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                   onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
                   className={cn(
-                    'border-b border-line/80 last:border-0',
-                    onRowDoubleClick && 'cursor-pointer',
-                    'hover:bg-teal-soft/40',
+                    'table-row-anim border-b border-line/80 last:border-0',
+                    (onRowClick || onRowDoubleClick) && 'cursor-pointer',
+                    'transition-colors duration-150 hover:bg-teal-soft/40',
                     rowClassName?.(row),
                   )}
+                  style={{ animationDelay: `${Math.min(index, 12) * 18}ms` }}
                 >
                   {columns.map((col) => (
                     <td
@@ -228,8 +214,32 @@ export function DataTable<T>({
         </table>
       </div>
 
-      {totalPages > 1 ? (
-        <div className="flex items-center justify-center gap-2 pt-1">
+      <div className="flex flex-col gap-3 border-t border-line/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            className="ui-input w-[4.5rem]"
+            aria-label={t('common.perPage')}
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value))
+              setPage(1)
+            }}
+          >
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <p className="text-sm text-ink-muted tabular-nums">
+            {sorted.length === 0
+              ? '0'
+              : `${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, sorted.length)}`}
+            <span className="text-ink-muted/70"> / {sorted.length}</span>
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 sm:justify-end">
           <Button variant="secondary" size="sm" disabled={safePage <= 1} onClick={() => setPage(1)}>
             «
           </Button>
@@ -242,7 +252,7 @@ export function DataTable<T>({
             ‹
           </Button>
           <span className="min-w-28 text-center text-sm text-ink-soft">
-            გვერდი {safePage} / {totalPages}
+            {t('common.page', { page: safePage, total: totalPages })}
           </span>
           <Button
             variant="secondary"
@@ -261,7 +271,7 @@ export function DataTable<T>({
             »
           </Button>
         </div>
-      ) : null}
+      </div>
     </div>
   )
 }
