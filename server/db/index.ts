@@ -5,7 +5,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createNeonDb, isPostgresUrl } from "./neon.ts";
 import * as sqliteSchema from "./schema.ts";
-import { s as schema } from "./tables.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.resolve(__dirname, "../../data");

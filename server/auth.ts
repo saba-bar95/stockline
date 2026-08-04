@@ -2,9 +2,10 @@ import { s } from "./db/tables.ts";
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import { eq, sql } from "drizzle-orm";
 import type { Context, Next } from "hono";
-import { db, qAll, qGet, qRun } from "./db/index.ts";
-const { memberships, organizations } = s;
+import { db, qGet, qRun } from "./db/index.ts";
 import { newId } from "./db/logic.ts";
+
+const { memberships, organizations } = s;
 export type AuthVars = {
     userId: string;
     organizationId: string;
