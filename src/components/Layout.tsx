@@ -54,8 +54,8 @@ export function Layout() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-display text-[1.65rem] leading-none font-semibold tracking-tight">
-                  <span className="bg-gradient-to-r from-teal to-teal-deep bg-clip-text text-transparent">
-                    Mise
+                  <span className="bg-gradient-to-r from-teal to-teal-deep bg-clip-text text-transparent uppercase">
+                    MISE
                   </span>
                 </p>
                 <p className="mt-2 text-sm tracking-wide text-white/50">{t('brand.tagline')}</p>
@@ -118,8 +118,8 @@ export function Layout() {
             <BurgerIcon className="size-5" />
           </button>
           <p className="font-display text-xl font-semibold tracking-tight">
-            <span className="bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent">
-              Mise
+            <span className="bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
+              MISE
             </span>
           </p>
         </header>

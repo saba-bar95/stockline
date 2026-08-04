@@ -1,5 +1,4 @@
 import {
-  AuthenticateWithRedirectCallback,
   ClerkProvider,
   SignedIn,
   SignedOut,
@@ -9,6 +8,7 @@ import {
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { CustomSignInForm, CustomSignUpForm } from '../components/AuthForms'
+import { AuthHero, AuthScene } from '../components/AuthScene'
 import { parseLocale } from './api'
 import { clerkAppearance, clerkLocalization } from './clerkTheme'
 import type { Locale } from '../i18n'
@@ -89,7 +89,7 @@ function AuthLocaleSwitch({ locale, mode }: { locale: Locale; mode: 'sign-in' | 
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-line bg-panel/90 p-1 backdrop-blur-sm">
+    <div className="flex items-center gap-2 rounded-full border border-teal/20 bg-panel/60 p-1 backdrop-blur-md">
       <button
         type="button"
         aria-label={t('auth.localeKa')}
@@ -136,7 +136,7 @@ function AuthThemeToggle() {
   const { theme, setTheme, t } = usePrefs()
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-line bg-panel/80 p-1">
+    <div className="flex items-center gap-1 rounded-lg border border-teal/20 bg-panel/60 p-1 backdrop-blur-md">
       <button
         type="button"
         aria-label={t('settings.themeLight')}
@@ -176,58 +176,31 @@ function AuthShell({
   const isSignIn = mode === 'sign-in'
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden text-ink">
-      {/* Kitchen photo — full bleed */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=2400&q=80')",
-        }}
-      />
-      {/* Readability overlay — stronger in dark mode */}
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0',
-          theme === 'dark'
-            ? 'bg-[linear-gradient(105deg,rgb(11_18_16/0.92)_0%,rgb(11_18_16/0.78)_45%,rgb(11_18_16/0.55)_100%)]'
-            : 'bg-[linear-gradient(105deg,rgb(243_246_244/0.94)_0%,rgb(243_246_244/0.82)_45%,rgb(243_246_244/0.45)_100%)]',
-        )}
-      />
+    <AuthScene theme={theme}>
+      <header className="auth-header-enter relative flex items-center justify-between gap-3 px-4 py-5 sm:px-8">
+        <AuthThemeToggle />
 
-      <div className="relative z-10 flex w-full flex-col">
-        <header className="relative flex items-center justify-between gap-3 px-4 py-5 sm:px-8">
-          <AuthThemeToggle />
+        <Link
+          to={`/${locale}/sign-in`}
+          className="absolute left-1/2 -translate-x-1/2 font-display text-4xl font-semibold tracking-tight sm:text-5xl"
+        >
+          <span className="auth-logo-shimmer bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
+            MISE
+          </span>
+        </Link>
 
-          <Link
-            to={`/${locale}/sign-in`}
-            className="absolute left-1/2 -translate-x-1/2 font-display text-4xl font-semibold tracking-tight sm:text-5xl"
-          >
-            <span className="bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent">
-              Mise
-            </span>
-          </Link>
+        <AuthLocaleSwitch locale={locale} mode={mode} />
+      </header>
 
-          <AuthLocaleSwitch locale={locale} mode={mode} />
-        </header>
+      <div className="mx-auto grid w-full max-w-5xl flex-1 items-center gap-10 px-4 pb-12 pt-6 lg:grid-cols-[1fr_minmax(0,420px)] lg:gap-16 lg:px-8">
+        <AuthHero
+          headline={isSignIn ? t('auth.headlineSignIn') : t('auth.headlineSignUp')}
+          blurb={t('auth.blurb')}
+        />
 
-        <div className="mx-auto grid w-full max-w-5xl flex-1 items-center gap-10 px-4 pb-12 pt-6 lg:grid-cols-[1fr_minmax(0,420px)] lg:gap-16 lg:px-8">
-          <div className="hidden lg:block">
-            <p className="font-pl text-[3rem] leading-[1.08] font-semibold tracking-tight">
-              <span className="bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent">
-                {isSignIn ? t('auth.headlineSignIn') : t('auth.headlineSignUp')}
-              </span>
-            </p>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-ink-soft">{t('auth.blurb')}</p>
-            <div className="mt-10 h-px w-24 bg-gradient-to-r from-teal to-transparent" />
-          </div>
-
-          <div className="mx-auto w-full max-w-[420px]">
-            {children}
-          </div>
-        </div>
+        <div className="auth-card-enter mx-auto w-full max-w-[420px]">{children}</div>
       </div>
-    </div>
+    </AuthScene>
   )
 }
 
@@ -275,9 +248,7 @@ export function SignUpPage() {
 }
 
 /** OAuth return URL for Google (and other social) redirects. */
-export function SsoCallbackPage() {
-  return <AuthenticateWithRedirectCallback />
-}
+export { SsoCallbackPage } from '../components/SsoCallbackPage'
 
 export function AuthUserButton() {
   if (!clerkEnabled) return null

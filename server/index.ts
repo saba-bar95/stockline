@@ -7,7 +7,7 @@ import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { z } from 'zod'
 import { and, desc, eq } from 'drizzle-orm'
-import { authMiddleware, getOrg, renameOrg } from './auth.ts'
+import { authMiddleware, getOrg, renameOrg, revokeFreshOAuthLink } from './auth.ts'
 import { db, migrate } from './db/index.ts'
 import {
   avgIngredientCost,
@@ -107,6 +107,13 @@ app.get('/me', (c) =>
     orgName: c.get('orgName'),
   }),
 )
+
+/** After Google OAuth: undo auto-link when email was registered with password. */
+app.post('/auth/revoke-fresh-oauth', async (c) => {
+  const userId = c.get('userId')
+  const result = await revokeFreshOAuthLink(userId)
+  return c.json(result)
+})
 
 app.patch('/me/org', async (c) => {
   const body = z.object({ name: z.string().min(1).max(80) }).parse(await c.req.json())

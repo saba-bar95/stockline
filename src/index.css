@@ -1,10 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Georgian:wght@500;600;700&display=swap');
 @import 'tailwindcss';
+
+/* Firago-style Georgian UI face (FiraGO OFL — Latin + Georgian, even letter height).
+   Drop licensed Firago-*.woff2 into /public/fonts/ to use the commercial Firago instead. */
+@font-face {
+  font-family: 'Firago';
+  src: url('/fonts/FiraGO-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Firago';
+  src: url('/fonts/FiraGO-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Firago';
+  src: url('/fonts/FiraGO-Bold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Firago';
+  src: url('/fonts/FiraGO-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @theme {
   --font-sans: 'IBM Plex Sans', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Cormorant Garamond', 'Noto Serif Georgian', Georgia, 'Times New Roman', serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-ge: 'Firago', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
   --font-pl: 'Space Grotesk', 'IBM Plex Sans', 'Noto Sans Georgian', ui-sans-serif, system-ui, sans-serif;
 
   --color-ink: var(--ink);
@@ -189,6 +224,7 @@ html[data-font-size='lg'] {
       shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200
       placeholder:text-ink-muted/70
       focus:border-teal focus:ring-2 focus:ring-teal/20;
+    font-family: var(--font-sans);
   }
 
   .field > span:first-child,
@@ -209,6 +245,11 @@ html[data-font-size='lg'] {
   .font-pl,
   .font-pl .font-display {
     font-family: var(--font-pl);
+  }
+
+  .font-ge {
+    font-family: var(--font-ge);
+    font-feature-settings: "case" on;
   }
 
   .sr-only {
@@ -392,5 +433,242 @@ html[data-font-size='lg'] {
 .cl-cardBox {
   background: transparent !important;
   box-shadow: none !important;
+}
+
+/* —— Auth page: immersive kitchen landing —— */
+.auth-glass-card {
+  border: 1px solid rgb(15 118 110 / 0.22);
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.5) inset,
+    0 24px 48px rgb(15 26 23 / 0.12),
+    0 0 80px rgb(15 118 110 / 0.08);
+}
+
+[data-theme='dark'] .auth-glass-card {
+  background: rgb(20 30 26 / 0.78);
+  border-color: rgb(45 212 191 / 0.2);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.04) inset,
+    0 24px 56px rgb(0 0 0 / 0.45),
+    0 0 100px rgb(45 212 191 / 0.06);
+}
+
+.auth-input {
+  font-family: var(--font-sans);
+}
+
+.auth-input::placeholder {
+  font-family: var(--font-sans);
+}
+
+.auth-card-glow {
+  background: linear-gradient(
+    135deg,
+    rgb(15 118 110 / 0.12) 0%,
+    transparent 40%,
+    rgb(194 65 12 / 0.08) 100%
+  );
+  opacity: 0.8;
+  animation: auth-glow-pulse 4s ease-in-out infinite;
+}
+
+.auth-grid {
+  background-image:
+    linear-gradient(rgb(15 118 110 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(15 118 110 / 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 75%);
+}
+
+.auth-particle {
+  animation: auth-float linear infinite;
+}
+
+.auth-mesh-a {
+  animation: auth-mesh-drift 18s ease-in-out infinite;
+}
+
+.auth-mesh-b {
+  animation: auth-mesh-drift 22s ease-in-out infinite reverse;
+}
+
+.auth-mesh-c {
+  animation: auth-mesh-drift 15s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.auth-steam {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.35) 0%, transparent 70%);
+  filter: blur(24px);
+  animation: auth-steam-rise 8s ease-in-out infinite;
+}
+
+.auth-steam-2 {
+  animation-delay: -3s;
+  animation-duration: 10s;
+}
+
+.auth-steam-3 {
+  animation-delay: -6s;
+  animation-duration: 12s;
+}
+
+.auth-chip {
+  animation: auth-chip-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-hero-enter {
+  animation: auth-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-hero-delay {
+  animation-delay: 0.12s;
+}
+
+.auth-hero-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.auth-header-enter {
+  animation: auth-fade-down 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-card-enter {
+  animation: auth-card-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+.auth-shimmer {
+  background-size: 200% auto;
+  animation: auth-text-shimmer 6s ease-in-out infinite;
+}
+
+.auth-logo-shimmer {
+  background-size: 200% auto;
+  animation: auth-text-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes auth-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.35;
+  }
+  33% {
+    transform: translate(12px, -20px) scale(1.15);
+    opacity: 0.65;
+  }
+  66% {
+    transform: translate(-8px, -10px) scale(0.9);
+    opacity: 0.45;
+  }
+}
+
+@keyframes auth-mesh-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, -20px) scale(1.08);
+  }
+}
+
+@keyframes auth-steam-rise {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-24px) scale(1.15);
+    opacity: 0.45;
+  }
+}
+
+@keyframes auth-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes auth-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes auth-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes auth-text-shimmer {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-particle,
+  .auth-mesh-a,
+  .auth-mesh-b,
+  .auth-mesh-c,
+  .auth-steam,
+  .auth-card-glow,
+  .auth-shimmer,
+  .auth-logo-shimmer {
+    animation: none !important;
+  }
+
+  .auth-hero-enter,
+  .auth-header-enter,
+  .auth-card-enter,
+  .auth-chip {
+    animation-duration: 0.01ms !important;
+  }
 }
 

@@ -159,3 +159,39 @@ export function getClerkClient() {
   if (!clerkConfigured()) return null
   return createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! })
 }
+
+const FRESH_OAUTH_MS = 120_000
+
+function isGoogleProvider(provider: string) {
+  return provider === 'google' || provider === 'oauth_google'
+}
+
+function externalAccountAgeMs(approvedAt: number | null | undefined): number | null {
+  if (approvedAt == null) return null
+  const ms = approvedAt < 1e12 ? approvedAt * 1000 : approvedAt
+  return Date.now() - ms
+}
+
+/** Block auto-linking Google to a password-only account; remove link if just added. */
+export async function revokeFreshOAuthLink(userId: string): Promise<{ blocked: boolean }> {
+  const client = getClerkClient()
+  if (!client) return { blocked: false }
+
+  const user = await client.users.getUser(userId)
+  if (!user.passwordEnabled) return { blocked: false }
+
+  const google = user.externalAccounts.find((a) => isGoogleProvider(a.provider))
+  if (!google) return { blocked: false }
+
+  const age = externalAccountAgeMs(
+    (google as { approvedAt?: number; createdAt?: number }).approvedAt ??
+      (google as { createdAt?: number }).createdAt,
+  )
+  if (age == null || age > FRESH_OAUTH_MS) return { blocked: false }
+
+  await client.users.deleteUserExternalAccount({
+    userId,
+    externalAccountId: google.id,
+  })
+  return { blocked: true }
+}

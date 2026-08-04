@@ -1,3 +1,5 @@
+import { AuthGlassCard } from './AuthScene'
+
 function Bone({ className }: { className?: string }) {
   return <div className={['animate-pulse rounded-lg bg-line/80', className].filter(Boolean).join(' ')} />
 }
@@ -5,11 +7,7 @@ function Bone({ className }: { className?: string }) {
 /** Placeholder while Clerk hooks load — mirrors the sign-in card layout. */
 export function AuthFormSkeleton() {
   return (
-    <div
-      className="rounded-2xl border border-line bg-panel/95 p-6 shadow-panel backdrop-blur-md sm:p-8"
-      aria-busy="true"
-      aria-label="Loading sign-in form"
-    >
+    <AuthGlassCard aria-busy="true" aria-label="Loading sign-in form">
       <Bone className="h-8 w-28" />
 
       <div className="mt-6 space-y-4">
@@ -33,6 +31,6 @@ export function AuthFormSkeleton() {
       <div className="mt-6 border-t border-line pt-5">
         <Bone className="mx-auto h-4 w-48" />
       </div>
-    </div>
+    </AuthGlassCard>
   )
 }

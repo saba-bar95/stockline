@@ -1,13 +1,15 @@
 import { useSignIn, useSignUp } from '@clerk/clerk-react'
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthFormSkeleton } from './AuthFormSkeleton'
+import { AuthGlassCard } from './AuthScene'
 import type { Locale } from '../i18n'
 import { cn } from '../lib/cn'
+import { markOAuthIntent, OAUTH_ERROR_PARAM, type OAuthErrorCode } from '../lib/oauthFlow'
 import { usePrefs } from '../preferences/PreferencesContext'
 
 function fieldClass() {
-  return 'mt-1.5 w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-teal'
+  return 'auth-input mt-1.5 w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-teal'
 }
 
 function primaryBtn(busy: boolean) {
@@ -19,6 +21,29 @@ function primaryBtn(busy: boolean) {
 
 function secondaryBtn() {
   return 'btn-press mt-2 flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-panel text-sm font-medium text-ink hover:border-teal hover:bg-teal-soft/40'
+}
+
+function oauthErrorMessage(code: OAuthErrorCode, t: ReturnType<typeof usePrefs>['t']): string {
+  if (code === 'email_in_use') return t('auth.errEmailInUse')
+  return t('auth.errOAuth')
+}
+
+function useOAuthErrorParam() {
+  const [params, setParams] = useSearchParams()
+  const { t } = usePrefs()
+  const code = params.get(OAUTH_ERROR_PARAM) as OAuthErrorCode | null
+
+  useEffect(() => {
+    if (!code) return
+    const next = new URLSearchParams(params)
+    next.delete(OAUTH_ERROR_PARAM)
+    setParams(next, { replace: true })
+  }, [code, params, setParams])
+
+  if (code === 'email_in_use' || code === 'oauth_failed') {
+    return oauthErrorMessage(code, t)
+  }
+  return ''
 }
 
 function errMsg(err: unknown): string {
@@ -65,6 +90,11 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   const [codeAsSecondFactor, setCodeAsSecondFactor] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const oauthError = useOAuthErrorParam()
+
+  useEffect(() => {
+    if (oauthError) setError(oauthError)
+  }, [oauthError])
 
   async function finishIfComplete(status: string | null | undefined, sessionId: string | null | undefined) {
     if (status === 'complete' && sessionId) {
@@ -80,10 +110,11 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
     setError('')
     setBusy(true)
     try {
+      markOAuthIntent('sign-in')
       await signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: `${window.location.origin}/${locale}/sso-callback`,
-        redirectUrlComplete: `${window.location.origin}/${locale}`,
+        redirectUrlComplete: `${window.location.origin}/${locale}/sso-callback?step=verify`,
       })
     } catch (e) {
       setError(errMsg(e))
@@ -228,7 +259,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/95 p-6 shadow-panel backdrop-blur-md sm:p-8">
+    <AuthGlassCard>
       <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">{t('auth.formSignIn')}</h1>
 
       {step === 'start' && (
@@ -463,7 +494,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
       {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
       <div id="clerk-captcha" />
       <AuthFormSwitchLink locale={locale} mode="sign-in" />
-    </div>
+    </AuthGlassCard>
   )
 }
 
@@ -478,16 +509,22 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
   const [step, setStep] = useState<'start' | 'code'>('start')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const oauthError = useOAuthErrorParam()
+
+  useEffect(() => {
+    if (oauthError) setError(oauthError)
+  }, [oauthError])
 
   async function onGoogle() {
     if (!isLoaded || !signUp) return
     setError('')
     setBusy(true)
     try {
+      markOAuthIntent('sign-up')
       await signUp.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: `${window.location.origin}/${locale}/sso-callback`,
-        redirectUrlComplete: `${window.location.origin}/${locale}`,
+        redirectUrlComplete: `${window.location.origin}/${locale}/sso-callback?step=verify`,
       })
     } catch (e) {
       setError(errMsg(e))
@@ -539,7 +576,7 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/95 p-6 shadow-panel backdrop-blur-md sm:p-8">
+    <AuthGlassCard>
       <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">{t('auth.formSignUp')}</h1>
 
       {step === 'start' && (
@@ -616,6 +653,6 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
       {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
       <div id="clerk-captcha" />
       <AuthFormSwitchLink locale={locale} mode="sign-up" />
-    </div>
+    </AuthGlassCard>
   )
 }

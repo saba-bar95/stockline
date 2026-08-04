@@ -47,6 +47,9 @@ export const en: Messages = {
     errSignIn: 'Could not complete sign-in',
     errReset: 'Could not reset password',
     errPasswordMismatch: 'Passwords do not match',
+    errEmailInUse:
+      'This email is already registered. Sign in with your email and password instead of Google.',
+    errOAuth: 'Google sign-in failed. Try again or use email.',
     errSignUp: 'Could not complete sign-up',
     errExtraVerify: 'Extra verification: enter the code from your email',
   },
