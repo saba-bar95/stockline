@@ -1,89 +1,146 @@
 # Mise
 
-Kitchen ops — stock, recipes, production, sales, overhead, P&L. Multi-tenant SaaS-style portfolio app: each signed-in kitchen only sees its own rows.
+Multi-tenant kitchen ops: stock, recipes, production, sales, overhead, and P&L — with Excel-style cost logic.
+
+Each signed-in kitchen only sees its own data (`organizationId` scoping). Built as a portfolio SaaS-style app (Clerk auth, Neon in production).
+
+**Live:** [mise-app-hazel.vercel.app](https://mise-app-hazel.vercel.app)
+
+## Features
+
+| Area | What it does |
+|------|----------------|
+| **Ingredients** | Stock, avg purchase cost, filters/sort/pagination, double-click movement history |
+| **Resale** | Bought-for-resale products |
+| **Products** | Manufactured items — ingredient + overhead unit cost (Excel parity) |
+| **Recipes** | Per-unit ingredient lines |
+| **Purchases / Production / Sales / Write-offs** | Day-to-day ops with stock checks |
+| **HR / Payroll** | Employees and daily pay → daily overhead pool |
+| **Overhead expenses** | Rent/utilities spread by month; other costs in daily pool |
+| **P&L** | Day / week / month — revenue, COGS, write-offs, unallocated OH, net |
+| **Settings** | Theme, font size, locale (KA/EN), org rename, CSV/Excel export |
+| **Auth** | Email + Google via Clerk; custom sign-in/up UI |
 
 ## Stack
 
-- **Vite + React + TypeScript** — UI
-- **Tailwind CSS v4** — kitchen teal theme
-- **Clerk** — email + Google auth
-- **Hono** — API (`/api`)
-- **Drizzle + SQLite** — local DB (`data/mise.sqlite`)
-- **Neon Postgres** — production DB (same logical schema in `server/db/schema.pg.ts`)
+| Layer | Tech |
+|-------|------|
+| UI | Vite, React 19, TypeScript, Tailwind CSS v4 |
+| Auth | Clerk (`@clerk/clerk-react` + `@clerk/backend`) |
+| API | Hono on Node (`/api`) |
+| Local DB | SQLite (`data/mise.sqlite`) via Drizzle + better-sqlite3 |
+| Prod DB | Neon Postgres (`server/db/schema.pg.ts`) |
+| Hosting | Vercel (UI) + Railway (API) + Neon |
 
-## Run locally (no Clerk keys)
+## Architecture (production)
+
+```
+Browser  →  Vercel (static Vite app)
+               │  /api/*  rewrite
+               ▼
+           Railway (Hono, `npm start`)
+               │
+               ▼
+           Neon Postgres
+```
+
+Locally, Vite proxies `/api` → `http://localhost:3001`.
+
+## Run locally
 
 ```bash
 npm install
-npm run db:push
+cp .env.example .env   # optional — fill Clerk keys for real auth
 npm run dev
 ```
 
-- Web: http://localhost:5173
-- API: http://localhost:3001/api/health
+- Web: http://localhost:5173  
+- API: http://localhost:3001/api/health  
 
-Without `CLERK_SECRET_KEY` / `VITE_CLERK_PUBLISHABLE_KEY`, the API uses a local-dev organization and the UI skips sign-in. Good for offline work.
+**Do not rely on `npm run db:push` for local SQLite** — the API runs `migrate()` on startup.  
+`db:push` can fail if indexes already exist; that is fine.
 
-## Env vars
+### Without Clerk keys
 
-Copy `.env.example` → `.env` (API) and set Vite keys in `.env` / `.env.local`:
+If `VITE_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` are empty:
+
+- UI skips sign-in  
+- API uses `dev_local_org`  
+
+Good for offline UI/API work.
+
+### With Clerk (recommended)
+
+Put keys in `.env`, restart `npm run dev`, open `/ka/sign-in`.
+
+## Environment variables
+
+See `.env.example`. Important ones:
+
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Local `.env` + **Vercel** | Clerk in the browser (baked at **build** time) |
+| `CLERK_SECRET_KEY` | Local `.env` + **Railway** | JWT verify on API |
+| `DATABASE_URL` | Local optional / **Railway** + Neon push | Empty → SQLite; `postgresql://…` → Neon |
+| `CORS_ORIGIN` | **Railway** | e.g. `https://mise-app-hazel.vercel.app` |
+| `MAX_ORGS` / `REGISTRATION_OPEN` | Railway | Cap / pause new kitchens |
+| `PORT` | Railway | Default `3001` |
+
+## Auth & tenancy
+
+1. User signs in with Clerk (email code / password / Google).  
+2. Frontend sends `Authorization: Bearer <JWT>` on API calls.  
+3. API verifies the token, resolves `memberships` → `organizationId`.  
+4. Every query is scoped to that org. First login can create an org (unless the free tier is full).
+
+Never trust a client-supplied organization id.
+
+## Cost model (Excel parity)
+
+- Ingredient average cost from purchases  
+- Production snapshots ingredient unit cost  
+- Daily overhead pool = payroll + dated OH (excl. rent/utilities/salary mirrors) + (rent+utilities)/daysInMonth  
+- Pool allocated to runs by ingredient-cost weight  
+- Product full unit cost = weighted production ingredient + OH  
+
+## Scripts
+
+| Command | Use |
+|---------|-----|
+| `npm run dev` | Vite + API watch |
+| `npm run build` | Typecheck + Vite production build |
+| `npm start` | API only (Railway) |
+| `npm test` | Vitest (org isolation, etc.) |
+| `npm run db:push:neon` | Push Postgres schema to Neon (needs `DATABASE_URL` in `.env`) |
+| `npm run excel:sync` | Import from local Excel into **SQLite** `dev_local_org` only |
+
+## Deploy
+
+Full walkthrough (Georgian): **[DEPLOY.md](./DEPLOY.md)**
+
+Short version:
+
+1. **Neon** — create DB → `npm run db:push:neon`  
+2. **Railway** — deploy API (`npm start`), set `CLERK_SECRET_KEY`, `DATABASE_URL`, `CORS_ORIGIN`  
+3. **Vercel** — deploy UI, set `VITE_CLERK_PUBLISHABLE_KEY`, rewrite `/api` → Railway in `vercel.json`  
+4. **Clerk** — Paths: `/ka/sign-in`, `/ka/sign-up`, sign-out → `/ka/sign-in`  
+
+After that, `git push` to `main` redeploys Vercel (UI) and usually Railway (API).
+
+Local SQLite data is **not** migrated to Neon automatically.
+
+## Project layout
 
 ```
-# Clerk (required in production)
-CLERK_SECRET_KEY=
-VITE_CLERK_PUBLISHABLE_KEY=
-
-# Database — omit for local SQLite file; set Neon URL in production
-DATABASE_URL=
-
-# Signup gate
-MAX_ORGS=25
-REGISTRATION_OPEN=true
-
-# CORS allowlist (comma-separated)
-CORS_ORIGIN=http://localhost:5173,https://your-mise.vercel.app
-
-PORT=3001
+src/           React UI (pages, auth, DataTable, i18n KA/EN, settings)
+server/        Hono API, auth, export, cost logic
+server/db/     SQLite + Neon Drizzle schemas, migrate, query helpers
+scripts/       Excel export/import (local)
+DEPLOY.md      Production deploy guide
+vercel.json    UI build + /api rewrite to Railway
+railway.toml   API start / healthcheck
 ```
 
-**Signup kill switch:** set `REGISTRATION_OPEN=false` or lower `MAX_ORGS` so first-login org creation returns 403. You can also disable public sign-ups in the Clerk Dashboard.
+## License
 
-## Auth + tenancy
-
-1. Browser signs in with Clerk (email or Google).
-2. Frontend sends `Authorization: Bearer <JWT>` on every API call.
-3. API verifies the JWT, looks up `memberships` for that Clerk `userId`, and scopes every query by `organizationId`.
-4. First login creates an organization (unless the free tier is full).
-
-Never trust a client-supplied org id.
-
-## Exports
-
-Signed-in kitchens can download **only their own data** from Settings:
-
-- Excel workbook — `GET /api/export/workbook.xlsx`
-- Per-entity CSV — `GET /api/export/csv/:entity` (e.g. `ingredients`, `pl`)
-
-## Deploy (portfolio)
-
-დეტალური ნაბიჯები: **[DEPLOY.md](./DEPLOY.md)** (Neon + Railway API + Vercel UI).
-
-მოკლედ:
-
-1. **Neon** — შექმენი პროექტი, დააკოპირე `DATABASE_URL`, გაუშვი `npm run db:push:neon`.
-2. **Railway** — დეპლოი API (`npx tsx server/run.ts`), env: `CLERK_SECRET_KEY`, `DATABASE_URL`, `CORS_ORIGIN`.
-3. **Vercel** — დეპლოი UI; `VITE_CLERK_PUBLISHABLE_KEY`; `vercel.json`-ში ჩაწერე Railway URL rewrite-ისთვის.
-4. **Clerk** — დაამატე Vercel domain allowed origins / redirect URLs.
-
-Local SQLite data is **not** auto-migrated to Neon.
-## Domains
-
-ინგრედიენტები · შესყიდული · პროდუქცია · რეცეპტები · შესყიდვები · წარმოება · გაყიდვები · ჩამოწერა · HR · ზედნადები · მოგება-ზარალი
-
-## Excel sync (local only)
-
-```bash
-npm run excel:sync
-```
-
-Imports into the `dev_local_org` kitchen used by unauthenticated local mode.
+Private portfolio project.

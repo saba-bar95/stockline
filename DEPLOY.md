@@ -8,10 +8,10 @@
 ## არქიტექტურა
 
 ```
-Browser  →  Vercel (Vite UI, mise.vercel.app)
+Browser  →  Vercel (https://mise-app-hazel.vercel.app)
                 │  /api/*  rewrite (proxy)
                 ▼
-            Railway (Hono API, Node)
+            Railway (https://mise-app-production-193e.up.railway.app)
                 │
                 ▼
             Neon Postgres
