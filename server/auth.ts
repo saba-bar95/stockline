@@ -1,0 +1,161 @@
+import { createClerkClient, verifyToken } from '@clerk/backend'
+import { eq, sql } from 'drizzle-orm'
+import type { Context, Next } from 'hono'
+import { db } from './db/index.ts'
+import { memberships, organizations } from './db/schema.ts'
+import { newId } from './db/logic.ts'
+
+export type AuthVars = {
+  userId: string
+  organizationId: string
+  orgName: string
+}
+
+const DEV_USER = 'dev_local_user'
+const DEV_ORG = 'dev_local_org'
+
+function maxOrgs(): number {
+  const n = Number(process.env.MAX_ORGS ?? 25)
+  return Number.isFinite(n) && n > 0 ? n : 25
+}
+
+function registrationOpen(): boolean {
+  return process.env.REGISTRATION_OPEN !== 'false'
+}
+
+function clerkConfigured(): boolean {
+  return Boolean(process.env.CLERK_SECRET_KEY)
+}
+
+function ensureDevOrg() {
+  const existing = db.select().from(organizations).where(eq(organizations.id, DEV_ORG)).get()
+  if (existing) return existing
+  db.insert(organizations)
+    .values({ id: DEV_ORG, name: 'Local Kitchen', ownerUserId: DEV_USER })
+    .run()
+  db.insert(memberships)
+    .values({ id: newId(), userId: DEV_USER, organizationId: DEV_ORG, role: 'owner' })
+    .run()
+  return db.select().from(organizations).where(eq(organizations.id, DEV_ORG)).get()!
+}
+
+function bootstrapOrg(userId: string, displayName?: string) {
+  if (!registrationOpen()) {
+    return { error: 'Registration is closed', status: 403 as const }
+  }
+  const count =
+    db.select({ c: sql<number>`count(*)` }).from(organizations).get()?.c ?? 0
+  if (count >= maxOrgs()) {
+    return {
+      error: `Free tier is full (${maxOrgs()} kitchens). New signups are paused.`,
+      status: 403 as const,
+    }
+  }
+  const orgId = newId()
+  const name = (displayName?.trim() || 'My Kitchen').slice(0, 80)
+  db.insert(organizations)
+    .values({ id: orgId, name, ownerUserId: userId })
+    .run()
+  db.insert(memberships)
+    .values({ id: newId(), userId, organizationId: orgId, role: 'owner' })
+    .run()
+  return { orgId, name }
+}
+
+export async function resolveAuth(userId: string): Promise<
+  | { ok: true; organizationId: string; orgName: string }
+  | { ok: false; error: string; status: 403 }
+> {
+  const membership = db
+    .select()
+    .from(memberships)
+    .where(eq(memberships.userId, userId))
+    .get()
+
+  if (membership) {
+    const org = db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, membership.organizationId))
+      .get()
+    return {
+      ok: true,
+      organizationId: membership.organizationId,
+      orgName: org?.name ?? 'Kitchen',
+    }
+  }
+
+  const created = bootstrapOrg(userId)
+  if ('error' in created) {
+    return { ok: false, error: created.error ?? 'Forbidden', status: 403 as const }
+  }
+  return { ok: true, organizationId: created.orgId, orgName: created.name }
+}
+
+export async function authMiddleware(c: Context, next: Next) {
+  if (c.req.path.endsWith('/health') || c.req.path.includes('/health')) {
+    return next()
+  }
+
+  // Vitest: impersonate tenant via headers (never enabled in production)
+  if (process.env.VITEST === 'true') {
+    const userId = c.req.header('X-Test-User-Id')
+    const orgId = c.req.header('X-Test-Org-Id')
+    if (userId && orgId) {
+      c.set('userId', userId)
+      c.set('organizationId', orgId)
+      c.set('orgName', 'Test Kitchen')
+      return next()
+    }
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  // Local offline mode when Clerk is not configured
+  if (!clerkConfigured()) {
+    const org = ensureDevOrg()
+    c.set('userId', DEV_USER)
+    c.set('organizationId', org.id)
+    c.set('orgName', org.name)
+    return next()
+  }
+
+  const header = c.req.header('Authorization')
+  const token = header?.startsWith('Bearer ') ? header.slice(7) : null
+  if (!token) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  try {
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    })
+    const userId = payload.sub
+    if (!userId) return c.json({ error: 'Unauthorized' }, 401)
+
+    const auth = await resolveAuth(userId)
+    if (!auth.ok) return c.json({ error: auth.error }, auth.status)
+
+    c.set('userId', userId)
+    c.set('organizationId', auth.organizationId)
+    c.set('orgName', auth.orgName)
+    return next()
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+}
+
+export function getOrg(c: Context): string {
+  return c.get('organizationId') as string
+}
+
+export async function renameOrg(orgId: string, name: string) {
+  db.update(organizations)
+    .set({ name: name.slice(0, 80) })
+    .where(eq(organizations.id, orgId))
+    .run()
+}
+
+export function getClerkClient() {
+  if (!clerkConfigured()) return null
+  return createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! })
+}

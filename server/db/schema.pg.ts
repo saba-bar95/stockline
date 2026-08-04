@@ -1,16 +1,15 @@
-import { sql } from 'drizzle-orm'
-import { sqliteTable, text, real, integer, index } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, real, integer, timestamp, index } from 'drizzle-orm/pg-core'
 
-/** Multi-tenant kitchen ops. Local SQLite; same shape maps to Neon Postgres in production. */
+/** Neon Postgres mirror of the SQLite multi-tenant schema. */
 
-export const organizations = sqliteTable('organizations', {
+export const organizations = pgTable('organizations', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   ownerUserId: text('owner_user_id').notNull(),
-  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
-export const memberships = sqliteTable(
+export const memberships = pgTable(
   'memberships',
   {
     id: text('id').primaryKey(),
@@ -19,12 +18,12 @@ export const memberships = sqliteTable(
       .notNull()
       .references(() => organizations.id),
     role: text('role').notNull().default('owner'),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('memberships_user_idx').on(t.userId)],
 )
 
-export const ingredients = sqliteTable(
+export const ingredients = pgTable(
   'ingredients',
   {
     id: text('id').primaryKey(),
@@ -34,12 +33,12 @@ export const ingredients = sqliteTable(
     name: text('name').notNull(),
     unit: text('unit').notNull(),
     category: text('category').notNull().default(''),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('ingredients_org_idx').on(t.organizationId)],
 )
 
-export const products = sqliteTable(
+export const products = pgTable(
   'products',
   {
     id: text('id').primaryKey(),
@@ -48,12 +47,12 @@ export const products = sqliteTable(
       .references(() => organizations.id),
     name: text('name').notNull(),
     unit: text('unit').notNull(),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('products_org_idx').on(t.organizationId)],
 )
 
-export const resaleProducts = sqliteTable(
+export const resaleProducts = pgTable(
   'resale_products',
   {
     id: text('id').primaryKey(),
@@ -63,15 +62,15 @@ export const resaleProducts = sqliteTable(
     name: text('name').notNull(),
     unit: text('unit').notNull(),
     category: text('category').notNull().default(''),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('resale_org_idx').on(t.organizationId)],
 )
 
-export const recipeLines = sqliteTable(
+export const recipeLines = pgTable(
   'recipe_lines',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),
@@ -82,10 +81,10 @@ export const recipeLines = sqliteTable(
   (t) => [index('recipes_org_idx').on(t.organizationId)],
 )
 
-export const purchases = sqliteTable(
+export const purchases = pgTable(
   'purchases',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),
@@ -100,10 +99,10 @@ export const purchases = sqliteTable(
   (t) => [index('purchases_org_idx').on(t.organizationId)],
 )
 
-export const productionRuns = sqliteTable(
+export const productionRuns = pgTable(
   'production_runs',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),
@@ -115,10 +114,10 @@ export const productionRuns = sqliteTable(
   (t) => [index('production_org_idx').on(t.organizationId)],
 )
 
-export const sales = sqliteTable(
+export const sales = pgTable(
   'sales',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),
@@ -132,10 +131,10 @@ export const sales = sqliteTable(
   (t) => [index('sales_org_idx').on(t.organizationId)],
 )
 
-export const writeOffs = sqliteTable(
+export const writeOffs = pgTable(
   'write_offs',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),
@@ -148,7 +147,7 @@ export const writeOffs = sqliteTable(
   (t) => [index('writeoffs_org_idx').on(t.organizationId)],
 )
 
-export const employees = sqliteTable(
+export const employees = pgTable(
   'employees',
   {
     id: text('id').primaryKey(),
@@ -162,10 +161,10 @@ export const employees = sqliteTable(
   (t) => [index('employees_org_idx').on(t.organizationId)],
 )
 
-export const payroll = sqliteTable(
+export const payroll = pgTable(
   'payroll',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),
@@ -176,10 +175,10 @@ export const payroll = sqliteTable(
   (t) => [index('payroll_org_idx').on(t.organizationId)],
 )
 
-export const expenses = sqliteTable(
+export const expenses = pgTable(
   'expenses',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id),

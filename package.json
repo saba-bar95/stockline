@@ -1,5 +1,5 @@
 {
-  "name": "mza-app",
+  "name": "mise",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,7 +9,10 @@
     "dev:api": "tsx watch server/index.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:push": "drizzle-kit push",
+    "db:push:neon": "drizzle-kit push --config drizzle.neon.config.ts",
     "db:studio": "drizzle-kit studio",
     "excel:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/export_excel_data.ps1",
     "excel:import": "tsx scripts/import_excel.ts",
@@ -17,10 +20,16 @@
     "lint": "oxlint"
   },
   "dependencies": {
+    "@clerk/backend": "^3.15.0",
+    "@clerk/clerk-react": "^5.61.9",
+    "@clerk/localizations": "^4.13.10",
     "@hono/node-server": "^2.0.12",
+    "@neondatabase/serverless": "^1.1.0",
     "better-sqlite3": "^13.0.2",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
+    "exceljs": "^4.4.0",
     "hono": "^4.12.34",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -30,6 +39,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/better-sqlite3": "^9.6.0",
+    "@types/exceljs": "^0.5.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
@@ -40,6 +50,7 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.5",
     "typescript": "~6.0.2",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "vitest": "^3.2.4"
   }
 }
