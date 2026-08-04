@@ -131,7 +131,7 @@ export function DataTable<T>({
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-line">
-        <table className="w-full min-w-[640px] border-collapse text-left text-[0.95rem]">
+        <table className="w-full min-w-160 border-collapse text-left text-[0.95rem]">
           <thead>
             <tr className="border-b border-line bg-teal-soft/60">
               {columns.map((col) => {
@@ -236,7 +236,7 @@ export function DataTable<T>({
       <div className="flex flex-col gap-3 border-t border-line/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <select
-            className="ui-input w-[4.5rem]"
+            className="ui-input w-18"
             aria-label={t("common.perPage")}
             value={pageSize}
             onChange={(e) => {

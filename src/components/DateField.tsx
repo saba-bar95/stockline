@@ -149,7 +149,7 @@ export function DateField({ value, onChange, required, id, className }: Props) {
     ? createPortal(
         <div
           ref={panelRef}
-          className="date-popover fixed z-[9999] overflow-hidden rounded-2xl border border-line bg-panel shadow-panel"
+          className="date-popover fixed z-9999 overflow-hidden rounded-2xl border border-line bg-panel shadow-panel"
           style={{
             top: pos.top,
             left: pos.left,
@@ -159,7 +159,7 @@ export function DateField({ value, onChange, required, id, className }: Props) {
           role="dialog"
           aria-label={t("common.date")}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-line bg-gradient-to-br from-teal-soft/50 to-panel px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2 border-b border-line bg-linear-to-br from-teal-soft/50 to-panel px-3 py-2.5">
             <button
               type="button"
               className="btn-press inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-panel hover:text-ink"

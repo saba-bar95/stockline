@@ -226,7 +226,7 @@ function AuthShell({
           to={`/${locale}/sign-in`}
           className="absolute left-1/2 -translate-x-1/2 font-display text-4xl font-semibold tracking-tight sm:text-5xl"
         >
-          <span className="auth-logo-shimmer bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
+          <span className="auth-logo-shimmer bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
             MISE
           </span>
         </Link>

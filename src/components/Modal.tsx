@@ -33,7 +33,7 @@ export function Modal({ title, open, onClose, children, wide }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[3px]"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[3px]"
       role="presentation"
       onClick={onClose}
       style={{ animation: "modal-backdrop 0.2s ease both" }}

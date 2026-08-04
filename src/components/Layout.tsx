@@ -46,7 +46,7 @@ export function Layout() {
           "fixed inset-y-0 left-0 w-[min(100%,280px)] max-w-[85vw] border-r border-white/5",
           "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           menuOpen ? "translate-x-0" : "-translate-x-full",
-          "lg:static lg:z-auto lg:h-screen lg:max-w-none lg:w-auto lg:translate-x-0 lg:sticky lg:top-0",
+          "lg:static lg:z-auto lg:h-screen lg:max-w-none lg:w-auto lg:translate-x-0 lg:top-0",
         )}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-5">
@@ -54,7 +54,7 @@ export function Layout() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-display text-[1.95rem] leading-none font-semibold tracking-tight">
-                  <span className="bg-gradient-to-r from-teal to-teal-deep bg-clip-text text-transparent uppercase">
+                  <span className="bg-linear-to-r from-teal to-teal-deep bg-clip-text text-transparent uppercase">
                     MISE
                   </span>
                 </p>
@@ -69,7 +69,7 @@ export function Layout() {
               </button>
             </div>
             <div
-              className="mt-4 h-px w-16 origin-left bg-gradient-to-r from-teal to-transparent"
+              className="mt-4 h-px w-16 origin-left bg-linear-to-r from-teal to-transparent"
               style={{
                 animation:
                   "accent-draw 0.6s cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -77,7 +77,7 @@ export function Layout() {
             />
           </div>
 
-          <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
+          <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-ms-overflow-style:none] scrollbar-thin">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
@@ -117,7 +117,7 @@ export function Layout() {
             <BurgerIcon className="size-5" />
           </button>
           <p className="font-display text-xl font-semibold tracking-tight">
-            <span className="bg-gradient-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
+            <span className="bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
               MISE
             </span>
           </p>
@@ -126,7 +126,7 @@ export function Layout() {
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div
             key={stripLocale(location.pathname)}
-            className="page-enter mx-auto w-full max-w-[1400px]"
+            className="page-enter mx-auto w-full max-w-350"
           >
             <Outlet />
           </div>

@@ -31,7 +31,7 @@ function Card({
   return (
     <div
       className={cn(
-        "font-pl group relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-panel to-teal-soft/40 p-5 shadow-sm",
+        "font-pl group relative overflow-hidden rounded-2xl border border-line bg-linear-to-br from-panel to-teal-soft/40 p-5 shadow-sm",
         "transition-transform duration-300 ease-out hover:-translate-y-0.5 hover:shadow-panel",
       )}
       style={{

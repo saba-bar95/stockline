@@ -15,7 +15,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "header-enter relative mb-7 rounded-2xl border border-line bg-gradient-to-br from-panel via-panel to-teal-soft/35 p-5 shadow-panel sm:p-6",
+        "header-enter relative mb-7 rounded-2xl border border-line bg-linear-to-br from-panel via-panel to-teal-soft/35 p-5 shadow-panel sm:p-6",
         className,
       )}
     >
@@ -30,7 +30,7 @@ export function PageHeader({
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-3">
           <div
-            className="h-1 w-14 origin-left rounded-full bg-gradient-to-r from-teal via-teal-deep to-amber/70"
+            className="h-1 w-14 origin-left rounded-full bg-linear-to-r from-teal via-teal-deep to-amber/70"
             style={{
               animation:
                 "accent-draw 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both",
@@ -74,7 +74,7 @@ export function Surface({
       {title ? (
         <div className="mb-5 flex items-center gap-3">
           <span
-            className="inline-block size-1.5 rounded-full bg-gradient-to-br from-teal to-amber"
+            className="inline-block size-1.5 rounded-full bg-linear-to-br from-teal to-amber"
             aria-hidden
           />
           <h2 className="font-display text-xl font-semibold tracking-tight text-gradient-heading">

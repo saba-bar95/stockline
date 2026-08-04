@@ -105,7 +105,7 @@ export function SettingsPanel() {
     ? createPortal(
         <div
           ref={panelRef}
-          className="fixed z-[110] overflow-auto rounded-xl border border-line bg-panel p-4 shadow-panel"
+          className="fixed z-110 overflow-auto rounded-xl border border-line bg-panel p-4 shadow-panel"
           style={{
             bottom: pos.bottom,
             left: pos.left,

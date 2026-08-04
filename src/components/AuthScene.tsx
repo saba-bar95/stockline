@@ -169,7 +169,7 @@ export function AuthHero({
       </p>
 
       <div className="auth-hero-enter auth-hero-delay-2 mt-10 flex items-center gap-3">
-        <div className="h-px w-24 bg-gradient-to-r from-teal to-transparent" />
+        <div className="h-px w-24 bg-linear-to-r from-teal to-transparent" />
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
           mise en place
         </span>
