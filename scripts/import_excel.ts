@@ -218,7 +218,7 @@ for (const r of runs) {
       date: r.date,
       productId: r.id,
       qty: num(r.qty),
-      ingredientUnitCost: snap > 0 ? snap : recipeUnitCost(ORG_ID, r.id),
+      ingredientUnitCost: snap > 0 ? snap : await recipeUnitCost(ORG_ID, r.id),
     })
     .run();
   runN++;
@@ -382,20 +382,20 @@ for (const id of ["პ-02", "პ-03", "პ-06"]) {
     id,
     name: s.name,
     excelIngUnit: s.ingUnit,
-    appIngUnit: productIngredientUnitCost(ORG_ID, id).toFixed(2),
+    appIngUnit: (await productIngredientUnitCost(ORG_ID, id)).toFixed(2),
     excelOhUnit: s.ohUnit,
-    appOhUnit: productOverheadUnitCost(ORG_ID, id).toFixed(2),
-    appFullUnit: productFullUnitCost(ORG_ID, id).toFixed(2),
+    appOhUnit: (await productOverheadUnitCost(ORG_ID, id)).toFixed(2),
+    appFullUnit: (await productFullUnitCost(ORG_ID, id)).toFixed(2),
     excelQtyIn: s.qtyIn,
-    appStock: productStock(ORG_ID, id).toFixed(3),
+    appStock: (await productStock(ORG_ID, id)).toFixed(3),
   });
 }
 
 const sampleIng = ings[0]?.id;
 if (sampleIng) {
   console.log("\nSample ingredient", sampleIng, {
-    stock: ingredientStock(ORG_ID, sampleIng),
-    avgCost: avgIngredientCost(ORG_ID, sampleIng),
+    stock: await ingredientStock(ORG_ID, sampleIng),
+    avgCost: await avgIngredientCost(ORG_ID, sampleIng),
   });
 }
 
