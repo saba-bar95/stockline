@@ -30,7 +30,7 @@ export function Layout() {
   }, [menuOpen]);
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="min-h-screen">
       {menuOpen ? (
         <button
           type="button"
@@ -42,11 +42,11 @@ export function Layout() {
 
       <aside
         className={cn(
-          "z-50 flex flex-col overflow-hidden border-white/10 bg-sidebar text-white",
+          "z-50 flex h-dvh flex-col overflow-hidden border-white/10 bg-sidebar text-white",
           "fixed inset-y-0 left-0 w-[min(100%,280px)] max-w-[85vw] border-r border-white/5",
           "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           menuOpen ? "translate-x-0" : "-translate-x-full",
-          "lg:static lg:z-auto lg:h-screen lg:max-w-none lg:w-auto lg:translate-x-0 lg:top-0",
+          "lg:w-[248px] lg:max-w-none lg:translate-x-0",
         )}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-5">
@@ -105,7 +105,7 @@ export function Layout() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 flex-col lg:ml-[248px]">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line/80 bg-paper/85 px-4 py-3 backdrop-blur-md lg:hidden">
           <button
             type="button"
