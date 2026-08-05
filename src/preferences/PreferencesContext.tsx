@@ -8,17 +8,21 @@ import {
   type ReactNode,
 } from "react";
 import { numberLocale, translate, type Locale, type MessageKey } from "../i18n";
+import { setQtyDecimalsLive } from "../lib/api";
 
 export type Theme = "light" | "dark";
 export type FontSize = "sm" | "md" | "lg";
 
 const FONT_CYCLE: FontSize[] = ["sm", "md", "lg"];
 const STORAGE_KEY = "mise-prefs";
+const QTY_DECIMALS_MIN = 0;
+const QTY_DECIMALS_MAX = 4;
 
 type Prefs = {
   locale: Locale;
   theme: Theme;
   fontSize: FontSize;
+  qtyDecimals: number;
 };
 
 type PrefsContextValue = Prefs & {
@@ -28,15 +32,24 @@ type PrefsContextValue = Prefs & {
   toggleTheme: (origin?: { x: number; y: number }) => void;
   cycleFontSize: () => void;
   setFontSize: (size: FontSize) => void;
+  setQtyDecimals: (n: number) => void;
+  bumpQtyDecimals: (delta: number) => void;
   numberLocale: string;
 };
 
 const PrefsContext = createContext<PrefsContextValue | null>(null);
 
+function clampQtyDecimals(n: unknown): number {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return 2;
+  return Math.min(QTY_DECIMALS_MAX, Math.max(QTY_DECIMALS_MIN, Math.round(v)));
+}
+
 function readStored(): Prefs {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { locale: "ka", theme: "light", fontSize: "md" };
+    if (!raw)
+      return { locale: "ka", theme: "light", fontSize: "md", qtyDecimals: 2 };
     const parsed = JSON.parse(raw) as Partial<Prefs>;
     return {
       locale: parsed.locale === "en" ? "en" : "ka",
@@ -44,9 +57,10 @@ function readStored(): Prefs {
       fontSize: FONT_CYCLE.includes(parsed.fontSize as FontSize)
         ? (parsed.fontSize as FontSize)
         : "md",
+      qtyDecimals: clampQtyDecimals(parsed.qtyDecimals ?? 2),
     };
   } catch {
-    return { locale: "ka", theme: "light", fontSize: "md" };
+    return { locale: "ka", theme: "light", fontSize: "md", qtyDecimals: 2 };
   }
 }
 
@@ -61,11 +75,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<Prefs>(() => {
     const initial = readStored();
     applyDom(initial);
+    setQtyDecimalsLive(initial.qtyDecimals);
     return initial;
   });
 
   useEffect(() => {
     applyDom(prefs);
+    setQtyDecimalsLive(prefs.qtyDecimals);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
   }, [prefs]);
 
@@ -133,6 +149,23 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setQtyDecimals = useCallback((n: number) => {
+    const qtyDecimals = clampQtyDecimals(n);
+    setQtyDecimalsLive(qtyDecimals);
+    setPrefs((p) =>
+      p.qtyDecimals === qtyDecimals ? p : { ...p, qtyDecimals },
+    );
+  }, []);
+
+  const bumpQtyDecimals = useCallback((delta: number) => {
+    setPrefs((p) => {
+      const qtyDecimals = clampQtyDecimals(p.qtyDecimals + delta);
+      setQtyDecimalsLive(qtyDecimals);
+      if (p.qtyDecimals === qtyDecimals) return p;
+      return { ...p, qtyDecimals };
+    });
+  }, []);
+
   const value = useMemo<PrefsContextValue>(
     () => ({
       ...prefs,
@@ -142,9 +175,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       toggleTheme,
       cycleFontSize,
       setFontSize,
+      setQtyDecimals,
+      bumpQtyDecimals,
       numberLocale: numberLocale(prefs.locale),
     }),
-    [prefs, t, setLocale, setTheme, toggleTheme, cycleFontSize, setFontSize],
+    [
+      prefs,
+      t,
+      setLocale,
+      setTheme,
+      toggleTheme,
+      cycleFontSize,
+      setFontSize,
+      setQtyDecimals,
+      bumpQtyDecimals,
+    ],
   );
 
   return (

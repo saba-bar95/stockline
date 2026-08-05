@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
-import { PageHeader, Surface } from "../components/ui";
+import { ResaleHistoryModal } from "../components/ResaleHistoryModal";
+import { SelectField } from "../components/SelectField";
+import { Button, PageHeader, Surface } from "../components/ui";
 import { api, money, qty } from "../lib/api";
+import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 
 type Row = {
@@ -13,15 +17,21 @@ type Row = {
   unitCost: number;
   stock: number;
   stockValue: number;
+  lastPurchaseDate?: string | null;
+  canDelete?: boolean;
 };
 
 export function ResalePage() {
-  const { t, numberLocale } = usePrefs();
+  const { t, locale, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [unit, setUnit] = useState("კგ");
+  const [unit, setUnit] = useState("kg");
   const [category, setCategory] = useState("");
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -42,6 +52,22 @@ export function ResalePage() {
     }
     return [...set].sort((a, b) => a.localeCompare(b, "ka"));
   }, [rows]);
+
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteErr("");
+    try {
+      await api(`/resale/${pendingDelete.id}`, { method: "DELETE" });
+      if (historyId === pendingDelete.id) setHistoryId(null);
+      setPendingDelete(null);
+      await load();
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <>
@@ -70,28 +96,30 @@ export function ResalePage() {
                 required
               />
             </label>
-            <label className="field">
-              {t("common.unit")}
-              <input
+            <div className="field">
+              <span>{t("common.unit")}</span>
+              <SelectField
                 value={unit}
-                onChange={(e) => setUnit(e.target.value)}
+                onChange={setUnit}
+                searchable={false}
                 required
+                options={[
+                  { value: "kg", label: t("units.kg") },
+                  { value: "l", label: t("units.l") },
+                  { value: "pc", label: t("units.pc") },
+                ]}
               />
-            </label>
-            <label className="field">
-              {t("common.category")}
-              <input
-                list="resale-categories"
+            </div>
+            <div className="field">
+              <span>{t("common.category")}</span>
+              <SelectField
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={setCategory}
+                allowCustom
                 placeholder={t("ingredients.categoryHint")}
+                options={categories.map((c) => ({ value: c, label: c }))}
               />
-              <datalist id="resale-categories">
-                {categories.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </label>
+            </div>
           </ModalForm>
         }
       />
@@ -100,7 +128,9 @@ export function ResalePage() {
           rows={rows}
           loading={loading}
           rowKey={(r) => r.id}
+          onRowClick={(r) => setHistoryId(r.id)}
           defaultSortKey="name"
+          emptyText={t("resale.empty")}
           columns={[
             {
               key: "id",
@@ -120,8 +150,8 @@ export function ResalePage() {
               key: "unit",
               label: t("common.unit"),
               sortValue: (r) => r.unit,
-              filterValue: (r) => r.unit,
-              render: (r) => r.unit,
+              filterValue: (r) => unitLabel(locale, r.unit),
+              render: (r) => unitLabel(locale, r.unit),
             },
             {
               key: "category",
@@ -156,9 +186,57 @@ export function ResalePage() {
               filterValue: (r) => String(r.stockValue),
               render: (r) => money(r.stockValue, numberLocale),
             },
+            {
+              key: "actions",
+              label: "",
+              sortable: false,
+              filterable: false,
+              render: (r) =>
+                r.canDelete ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="min-w-22 text-danger hover:bg-danger/10 hover:text-danger"
+                    disabled={deleting}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteErr("");
+                      setPendingDelete(r);
+                    }}
+                  >
+                    {t("common.delete")}
+                  </Button>
+                ) : (
+                  <span
+                    className="text-xs text-ink-muted"
+                    title={t("resale.deleteBlocked")}
+                  >
+                    —
+                  </span>
+                ),
+            },
           ]}
         />
       </Surface>
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title={t("resale.deleteTitle")}
+        message={t("resale.deleteConfirm", {
+          name: pendingDelete?.name ?? "",
+        })}
+        error={deleteErr}
+        busy={deleting}
+        onCancel={() => {
+          if (deleting) return;
+          setPendingDelete(null);
+          setDeleteErr("");
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
+      <ResaleHistoryModal
+        resaleId={historyId}
+        onClose={() => setHistoryId(null)}
+      />
     </>
   );
 }

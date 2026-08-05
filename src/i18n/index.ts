@@ -50,6 +50,7 @@ export function movementLabel(locale: Locale, type: string): string {
     შესყიდვა: "movement.purchase",
     წარმოება: "movement.production",
     ჩამოწერა: "movement.writeOff",
+    გაყიდვა: "movement.sale",
   };
   const key = map[type];
   return key ? translate(locale, key) : type;
@@ -71,4 +72,21 @@ export function expenseTypeLabel(locale: Locale, type: string): string {
   };
   const key = map[type];
   return key ? translate(locale, key) : type;
+}
+
+/** Map stored unit codes (and legacy Georgian literals) to display string. */
+export function unitLabel(locale: Locale, unit: string): string {
+  const u = unit.trim();
+  const map: Record<string, MessageKey> = {
+    kg: "units.kg",
+    კგ: "units.kg",
+    l: "units.l",
+    ლ: "units.l",
+    ლიტრი: "units.l",
+    pc: "units.pc",
+    ც: "units.pc",
+    ცალი: "units.pc",
+  };
+  const key = map[u];
+  return key ? translate(locale, key) : unit;
 }

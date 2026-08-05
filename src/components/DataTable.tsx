@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { SelectField } from "./SelectField";
 import { Button, LoadingState } from "./ui";
 
 export type Column<T> = {
@@ -10,10 +11,14 @@ export type Column<T> = {
   title?: string;
   sortable?: boolean;
   filterable?: boolean;
+  /** Column filter UI. Default `"text"` when filterable. */
+  filterType?: "text" | "select";
+  /** Optional fixed select options; otherwise derived from row values. */
+  filterOptions?: Array<{ value: string; label: string }>;
   sortValue?: (row: T) => string | number | null | undefined;
   filterValue?: (row: T) => string;
   render: (row: T) => ReactNode;
-  align?: "left" | "right";
+  align?: "left" | "right" | "center";
 };
 
 type Props<T> = {
@@ -28,6 +33,8 @@ type Props<T> = {
   defaultSortKey?: string;
   defaultSortDir?: "asc" | "desc";
   defaultPageSize?: 20 | 30 | 50;
+  /** Hide global search (e.g. compact tables in modals). */
+  searchable?: boolean;
 };
 
 const PAGE_SIZES = [20, 30, 50] as const;
@@ -44,7 +51,7 @@ function cmp(
   return String(a).localeCompare(String(b), locale);
 }
 
-export function DataTable<T>({
+function DataTable<T>({
   rows,
   columns,
   rowKey,
@@ -56,6 +63,7 @@ export function DataTable<T>({
   defaultSortKey,
   defaultSortDir = "asc",
   defaultPageSize = 20,
+  searchable = true,
 }: Props<T>) {
   const { t, numberLocale } = usePrefs();
   const [filter, setFilter] = useState("");
@@ -71,12 +79,15 @@ export function DataTable<T>({
     const q = filter.trim().toLowerCase();
     return rows.filter((row) => {
       for (const col of columns) {
-        const cf = colFilters[col.key]?.trim().toLowerCase();
-        if (cf) {
-          const fv = (
-            col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? "")
-          ).toLowerCase();
-          if (!fv.includes(cf)) return false;
+        const raw = colFilters[col.key];
+        if (raw == null || raw === "") continue;
+        const fv =
+          col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? "");
+        if (col.filterType === "select") {
+          if (fv !== raw) return false;
+        } else {
+          const cf = raw.trim().toLowerCase();
+          if (cf && !fv.toLowerCase().includes(cf)) return false;
         }
       }
       if (!q) return true;
@@ -88,6 +99,28 @@ export function DataTable<T>({
       });
     });
   }, [rows, columns, filter, colFilters]);
+
+  const selectFilterOptions = useMemo(() => {
+    const map: Record<string, Array<{ value: string; label: string }>> = {};
+    for (const col of columns) {
+      if (col.filterable === false || col.filterType !== "select") continue;
+      if (col.filterOptions) {
+        map[col.key] = col.filterOptions;
+        continue;
+      }
+      const set = new Set<string>();
+      for (const row of rows) {
+        const v = (
+          col.filterValue?.(row) ?? String(col.sortValue?.(row) ?? "")
+        ).trim();
+        if (v) set.add(v);
+      }
+      map[col.key] = [...set]
+        .sort((a, b) => a.localeCompare(b, numberLocale))
+        .map((v) => ({ value: v, label: v }));
+    }
+    return map;
+  }, [columns, rows, numberLocale]);
 
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sortKey);
@@ -114,23 +147,27 @@ export function DataTable<T>({
     setPage(1);
   }
 
+  const showColFilters = columns.some((c) => c.filterable !== false);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <label className="field mb-0 min-w-0 flex-1 sm:max-w-sm">
-          {t("common.search")}
-          <input
-            type="search"
-            className="ui-input"
-            placeholder={t("common.searchPlaceholder")}
-            value={filter}
-            onChange={(e) => {
-              setFilter(e.target.value);
-              setPage(1);
-            }}
-          />
-        </label>
-      </div>
+      {searchable ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <label className="field mb-0 min-w-0 flex-1 sm:max-w-sm">
+            {t("common.search")}
+            <input
+              type="search"
+              className="ui-input"
+              placeholder={t("common.searchPlaceholder")}
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto rounded-xl border border-line">
         <table className="w-full min-w-160 border-collapse text-left text-[0.95rem]">
@@ -146,11 +183,12 @@ export function DataTable<T>({
                     title={full}
                     onClick={sortable ? () => toggleSort(col.key) : undefined}
                     className={cn(
-                      "px-3 py-3 text-xs font-semibold tracking-wide text-ink-soft uppercase",
+                      "border-r border-line/70 px-3 py-3 text-xs font-semibold tracking-wide text-ink-soft uppercase last:border-r-0",
                       sortable &&
                         "cursor-pointer select-none hover:text-teal-deep",
                       active && "text-teal-deep",
                       col.align === "right" && "text-right",
+                      col.align === "center" && "text-center",
                     )}
                   >
                     {col.label}
@@ -163,31 +201,59 @@ export function DataTable<T>({
                 );
               })}
             </tr>
-            <tr className="border-b border-line bg-paper/80">
-              {columns.map((col) => (
-                <th key={col.key} className="p-1.5">
-                  {col.filterable !== false ? (
-                    <input
-                      type="search"
-                      className="ui-input h-8 text-sm"
-                      aria-label={t("common.filterCol", {
-                        label: col.title ?? col.label,
-                      })}
-                      title={col.title ?? col.label}
-                      placeholder={t("common.filter")}
-                      value={colFilters[col.key] ?? ""}
-                      onChange={(e) => {
-                        setColFilters((prev) => ({
-                          ...prev,
-                          [col.key]: e.target.value,
-                        }));
-                        setPage(1);
-                      }}
-                    />
-                  ) : null}
-                </th>
-              ))}
-            </tr>
+            {showColFilters ? (
+              <tr className="border-b border-line bg-paper/80">
+                {columns.map((col) => (
+                  <th
+                    key={col.key}
+                    className="border-r border-line/70 p-1.5 last:border-r-0"
+                  >
+                    {col.filterable !== false ? (
+                      col.filterType === "select" ? (
+                        <SelectField
+                          className="h-8 text-sm"
+                          searchable={false}
+                          aria-label={t("common.filterCol", {
+                            label: col.title ?? col.label,
+                          })}
+                          placeholder={t("common.filterAll")}
+                          value={colFilters[col.key] ?? ""}
+                          onChange={(v) => {
+                            setColFilters((prev) => ({
+                              ...prev,
+                              [col.key]: v,
+                            }));
+                            setPage(1);
+                          }}
+                          options={[
+                            { value: "", label: t("common.filterAll") },
+                            ...(selectFilterOptions[col.key] ?? []),
+                          ]}
+                        />
+                      ) : (
+                        <input
+                          type="search"
+                          className="ui-input h-8 text-sm"
+                          aria-label={t("common.filterCol", {
+                            label: col.title ?? col.label,
+                          })}
+                          title={col.title ?? col.label}
+                          placeholder={t("common.filter")}
+                          value={colFilters[col.key] ?? ""}
+                          onChange={(e) => {
+                            setColFilters((prev) => ({
+                              ...prev,
+                              [col.key]: e.target.value,
+                            }));
+                            setPage(1);
+                          }}
+                        />
+                      )
+                    ) : null}
+                  </th>
+                ))}
+              </tr>
+            ) : null}
           </thead>
           <tbody
             key={`${safePage}-${pageSize}-${sortKey}-${sortDir}-${filter}`}
@@ -227,8 +293,9 @@ export function DataTable<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        "px-3 py-2.5 tabular-nums text-ink",
+                        "border-r border-line/70 px-3 py-2.5 tabular-nums text-ink last:border-r-0",
                         col.align === "right" && "text-right",
+                        col.align === "center" && "text-center",
                       )}
                     >
                       {col.render(row)}
@@ -243,21 +310,20 @@ export function DataTable<T>({
 
       <div className="flex flex-col gap-3 border-t border-line/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <select
-            className="ui-input w-18"
+          <SelectField
+            className="w-18"
+            searchable={false}
             aria-label={t("common.perPage")}
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
+            value={String(pageSize)}
+            onChange={(v) => {
+              setPageSize(Number(v) as 20 | 30 | 50);
               setPage(1);
             }}
-          >
-            {PAGE_SIZES.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
+            options={PAGE_SIZES.map((n) => ({
+              value: String(n),
+              label: String(n),
+            }))}
+          />
           <p className="text-sm text-ink-muted tabular-nums">
             {sorted.length === 0
               ? "0"
@@ -307,3 +373,5 @@ export function DataTable<T>({
     </div>
   );
 }
+
+export { DataTable };

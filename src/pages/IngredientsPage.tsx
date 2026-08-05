@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { DataTable } from "../components/DataTable";
 import { IngredientHistoryModal } from "../components/IngredientHistoryModal";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
 import { api, money, qty } from "../lib/api";
+import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 
 type Row = {
@@ -18,14 +21,16 @@ type Row = {
 };
 
 export function IngredientsPage() {
-  const { t, numberLocale } = usePrefs();
+  const { t, locale, numberLocale, qtyDecimals } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [unit, setUnit] = useState("კგ");
+  const [unit, setUnit] = useState("kg");
   const [category, setCategory] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -48,21 +53,19 @@ export function IngredientsPage() {
     return [...set].sort((a, b) => a.localeCompare(b, "ka"));
   }, [rows]);
 
-  async function removeIngredient(row: Row) {
-    if (!row.canDelete || deletingId) return;
-    const ok = window.confirm(
-      t("ingredients.deleteConfirm", { name: row.name }),
-    );
-    if (!ok) return;
-    setDeletingId(row.id);
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteErr("");
     try {
-      await api(`/ingredients/${row.id}`, { method: "DELETE" });
-      if (historyId === row.id) setHistoryId(null);
-      load();
+      await api(`/ingredients/${pendingDelete.id}`, { method: "DELETE" });
+      if (historyId === pendingDelete.id) setHistoryId(null);
+      setPendingDelete(null);
+      await load();
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : t("common.error"));
+      setDeleteErr(e instanceof Error ? e.message : t("common.error"));
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   }
 
@@ -76,13 +79,17 @@ export function IngredientsPage() {
             title={t("ingredients.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              const cat = category.trim();
+              if (!cat) {
+                throw new Error(t("ingredients.categoryRequired"));
+              }
               await api("/ingredients", {
                 method: "POST",
-                body: JSON.stringify({ name, unit, category }),
+                body: JSON.stringify({ name, unit, category: cat }),
               });
               setName("");
               setCategory("");
-              load();
+              await load();
             }}
           >
             <label className="field">
@@ -93,28 +100,30 @@ export function IngredientsPage() {
                 required
               />
             </label>
-            <label className="field">
-              {t("common.unit")}
-              <select value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option value="კგ">{t("units.kg")}</option>
-                <option value="ლ">{t("units.l")}</option>
-                <option value="გ">{t("units.g")}</option>
-              </select>
-            </label>
-            <label className="field">
-              {t("common.category")}
-              <input
-                list="ingredient-categories"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder={t("ingredients.categoryHint")}
+            <div className="field">
+              <span>{t("common.unit")}</span>
+              <SelectField
+                value={unit}
+                onChange={setUnit}
+                searchable={false}
+                options={[
+                  { value: "kg", label: t("units.kg") },
+                  { value: "l", label: t("units.l") },
+                  { value: "pc", label: t("units.pc") },
+                ]}
               />
-              <datalist id="ingredient-categories">
-                {categories.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </label>
+            </div>
+            <div className="field">
+              <span>{t("common.category")}</span>
+              <SelectField
+                value={category}
+                onChange={setCategory}
+                allowCustom
+                required
+                placeholder={t("ingredients.categoryHint")}
+                options={categories.map((c) => ({ value: c, label: c }))}
+              />
+            </div>
           </ModalForm>
         }
       />
@@ -144,41 +153,41 @@ export function IngredientsPage() {
             {
               key: "unit",
               label: t("common.unit"),
+              filterType: "select",
               sortValue: (r) => r.unit,
-              filterValue: (r) => r.unit,
-              render: (r) => r.unit,
+              filterValue: (r) => unitLabel(locale, r.unit),
+              render: (r) => unitLabel(locale, r.unit),
             },
             {
               key: "category",
               label: t("common.category"),
+              filterType: "select",
               sortValue: (r) => r.category,
-              filterValue: (r) => r.category,
+              filterValue: (r) => r.category || "—",
               render: (r) => r.category || "—",
             },
             {
               key: "lastPurchaseDate",
               label: t("ingredients.lastPurchase"),
               title: t("ingredients.lastPurchaseFull"),
+              filterable: false,
               sortValue: (r) => r.lastPurchaseDate ?? "",
-              filterValue: (r) => r.lastPurchaseDate ?? "",
               render: (r) => r.lastPurchaseDate ?? "—",
             },
             {
               key: "avgCost",
               label: t("ingredients.avgPrice"),
               title: t("ingredients.avgPriceFull"),
-              align: "right",
+              filterable: false,
               sortValue: (r) => r.avgCost,
-              filterValue: (r) => String(r.avgCost),
               render: (r) => money(r.avgCost, numberLocale),
             },
             {
               key: "stock",
               label: t("common.stock"),
-              align: "right",
+              filterable: false,
               sortValue: (r) => r.stock,
-              filterValue: (r) => String(r.stock),
-              render: (r) => qty(r.stock, numberLocale),
+              render: (r) => qty(r.stock, numberLocale, qtyDecimals),
             },
             {
               key: "actions",
@@ -190,11 +199,12 @@ export function IngredientsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-danger hover:bg-danger/10 hover:text-danger"
-                    disabled={deletingId === r.id}
+                    className="min-w-22 text-danger hover:bg-danger/10 hover:text-danger"
+                    disabled={deleting}
                     onClick={(e) => {
                       e.stopPropagation();
-                      void removeIngredient(r);
+                      setDeleteErr("");
+                      setPendingDelete(r);
                     }}
                   >
                     {t("common.delete")}
@@ -211,6 +221,21 @@ export function IngredientsPage() {
           ]}
         />
       </Surface>
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title={t("ingredients.deleteTitle")}
+        message={t("ingredients.deleteConfirm", {
+          name: pendingDelete?.name ?? "",
+        })}
+        error={deleteErr}
+        busy={deleting}
+        onCancel={() => {
+          if (deleting) return;
+          setPendingDelete(null);
+          setDeleteErr("");
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
       <IngredientHistoryModal
         ingredientId={historyId}
         onClose={() => setHistoryId(null)}

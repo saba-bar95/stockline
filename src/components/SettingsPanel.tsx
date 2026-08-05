@@ -21,7 +21,8 @@ type PanelPos = {
 };
 
 export function SettingsPanel() {
-  const { t, locale, theme, setTheme, fontSize, cycleFontSize } = usePrefs();
+  const { t, locale, theme, setTheme, fontSize, cycleFontSize, qtyDecimals, bumpQtyDecimals } =
+    usePrefs();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<PanelPos>({
     bottom: 72,
@@ -187,6 +188,41 @@ export function SettingsPanel() {
               </button>
               <p className="text-xs text-ink-muted">
                 {t("settings.fontSizeHint")}
+              </p>
+            </fieldset>
+
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
+                {t("settings.qtyDecimals")}
+              </legend>
+              <div className="flex h-11 items-center gap-1.5">
+                <button
+                  type="button"
+                  className="btn-press flex h-full w-11 cursor-pointer items-center justify-center rounded-lg border border-line-strong bg-paper text-lg text-ink hover:border-teal hover:bg-teal-soft/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={qtyDecimals <= 0}
+                  onClick={() => bumpQtyDecimals(-1)}
+                  aria-label={t("settings.qtyDecimalsLess")}
+                >
+                  −
+                </button>
+                <div className="flex h-full min-w-0 flex-1 items-center justify-center rounded-lg border border-line bg-paper tabular-nums text-ink">
+                  <span className="font-medium">{qtyDecimals}</span>
+                  <span className="ml-1 text-sm text-ink-muted">
+                    {t("settings.qtyDecimalsUnit")}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-press flex h-full w-11 cursor-pointer items-center justify-center rounded-lg border border-line-strong bg-paper text-lg text-ink hover:border-teal hover:bg-teal-soft/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={qtyDecimals >= 4}
+                  onClick={() => bumpQtyDecimals(1)}
+                  aria-label={t("settings.qtyDecimalsMore")}
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-ink-muted">
+                {t("settings.qtyDecimalsHint")}
               </p>
             </fieldset>
 

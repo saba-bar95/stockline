@@ -8,6 +8,35 @@ export function setApiTokenGetter(fn: () => Promise<string | null>) {
   getTokenFn = fn;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const url = `/api${path}`;
+  const maxAttempts = import.meta.env.DEV ? 8 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      const retryable =
+        import.meta.env.DEV &&
+        (res.status === 502 || res.status === 503 || res.status === 504);
+      if (retryable && attempt < maxAttempts - 1) {
+        await sleep(300 * (attempt + 1));
+        continue;
+      }
+      return res;
+    } catch {
+      if (import.meta.env.DEV && attempt < maxAttempts - 1) {
+        await sleep(300 * (attempt + 1));
+        continue;
+      }
+      throw new Error("Cannot reach API — is the server running?");
+    }
+  }
+  throw new Error("Cannot reach API — is the server running?");
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type") && init?.body) {
@@ -16,7 +45,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getTokenFn ? await getTokenFn() : null;
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`/api${path}`, {
+  const res = await apiFetch(path, {
     ...init,
     headers,
   });
@@ -32,7 +61,7 @@ export async function downloadExport(path: string, filename: string) {
   const headers = new Headers();
   const token = getTokenFn ? await getTokenFn() : null;
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const res = await fetch(`/api${path}`, { headers });
+  const res = await apiFetch(path, { headers });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error((data as { error?: string }).error || res.statusText);
@@ -47,21 +76,38 @@ export async function downloadExport(path: string, filename: string) {
 }
 
 export function today() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-export function money(n: number, locale = "en-US") {
+export function money(n: number, locale = "en-US", decimals = 2) {
+  const d = Math.min(6, Math.max(0, Math.round(decimals)));
   return n.toLocaleString(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
   });
 }
 
-export function qty(n: number, locale = "en-US") {
+export function qty(n: number, locale = "en-US", decimals = getQtyDecimals()) {
+  const d = Math.min(6, Math.max(0, Math.round(decimals)));
   return n.toLocaleString(locale, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 3,
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
   });
+}
+
+/** Live qty decimal places — kept in sync by PreferencesProvider. */
+let qtyDecimalsLive = 2;
+
+export function getQtyDecimals() {
+  return qtyDecimalsLive;
+}
+
+export function setQtyDecimalsLive(n: number) {
+  qtyDecimalsLive = Math.min(6, Math.max(0, Math.round(n)));
 }
 
 export type NavItem = { to: string; labelKey: MessageKey };
