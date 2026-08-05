@@ -67,36 +67,49 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
       ) : null}
       {ing && data ? (
         <>
-          <div className="mb-5 flex flex-wrap gap-x-5 gap-y-2 rounded-xl bg-paper px-4 py-3 text-sm text-ink-soft">
-            <span>
-              ID: <strong className="mono text-ink">{ing.id}</strong>
-            </span>
-            <span>
-              {t("history.unit")}:{" "}
+          <div className="mb-5 grid grid-cols-2 gap-x-10 gap-y-4 rounded-xl bg-paper px-5 py-4 text-sm text-ink-soft sm:grid-cols-3">
+            <div className="min-w-0 space-y-1">
+              <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
+                ID
+              </div>
+              <strong className="mono text-ink">{ing.id}</strong>
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
+                {t("history.unit")}
+              </div>
               <strong className="text-ink">{ing.unit}</strong>
-            </span>
-            <span>
-              {t("history.category")}:{" "}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
+                {t("history.category")}
+              </div>
               <strong className="text-ink">{ing.category || "—"}</strong>
-            </span>
-            <span>
-              {t("history.avgPrice")}:{" "}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
+                {t("history.avgPrice")}
+              </div>
               <strong className="text-ink">
                 {money(ing.avgCost, numberLocale)}
               </strong>
-            </span>
-            <span>
-              {t("history.stock")}:{" "}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
+                {t("history.stock")}
+              </div>
               <strong className="text-ink">
                 {qty(ing.stock, numberLocale)}
               </strong>
-            </span>
-            <span>
-              {t("history.lastPurchase")}:{" "}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
+                {t("history.lastPurchase")}
+              </div>
               <strong className="text-ink">
                 {ing.lastPurchaseDate ?? "—"}
               </strong>
-            </span>
+            </div>
           </div>
           <DataTable
             rows={data.movements}

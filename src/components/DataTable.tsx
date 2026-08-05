@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -148,9 +148,19 @@ function DataTable<T>({
   }
 
   const showColFilters = columns.some((c) => c.filterable !== false);
+  const topRef = useRef<HTMLDivElement>(null);
+  const skipScrollRef = useRef(true);
+
+  useEffect(() => {
+    if (skipScrollRef.current) {
+      skipScrollRef.current = false;
+      return;
+    }
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [safePage, pageSize]);
 
   return (
-    <div className="space-y-4">
+    <div ref={topRef} className="space-y-4 scroll-mt-4">
       {searchable ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <label className="field mb-0 min-w-0 flex-1 sm:max-w-sm">
@@ -183,12 +193,10 @@ function DataTable<T>({
                     title={full}
                     onClick={sortable ? () => toggleSort(col.key) : undefined}
                     className={cn(
-                      "border-r border-line/70 px-3 py-3 text-xs font-semibold tracking-wide text-ink-soft uppercase last:border-r-0",
+                      "border-r border-line/70 px-3 py-3 text-left text-xs font-semibold tracking-wide text-ink-soft uppercase last:border-r-0",
                       sortable &&
                         "cursor-pointer select-none hover:text-teal-deep",
                       active && "text-teal-deep",
-                      col.align === "right" && "text-right",
-                      col.align === "center" && "text-center",
                     )}
                   >
                     {col.label}

@@ -243,6 +243,21 @@ html[data-font-size="lg"] {
     font-family: var(--font-sans);
   }
 
+  /* Hide number input steppers (up/down arrows) */
+  .field input[type="number"],
+  input.ui-input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .field input[type="number"]::-webkit-outer-spin-button,
+  .field input[type="number"]::-webkit-inner-spin-button,
+  input.ui-input[type="number"]::-webkit-outer-spin-button,
+  input.ui-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   .field > span:first-child,
   .field > label:first-child {
     @apply text-sm font-medium text-ink-soft;
