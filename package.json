@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n web,api -c cyan,magenta \"vite\" \"tsx watch server/run.ts\"",
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"tsx watch server/run.ts\" \"npx --yes wait-on -t 120000 http-get://127.0.0.1:3001/api/health && vite\"",
     "dev:web": "vite",
     "dev:api": "tsx watch server/run.ts",
     "build": "tsc -b && vite build",
