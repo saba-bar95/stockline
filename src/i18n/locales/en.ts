@@ -90,6 +90,9 @@ export const en: Messages = {
     filterAll: "All",
     page: "Page {page} / {total}",
     empty: "No data",
+    formInvalid: "Please fill in the required fields.",
+    edit: "Edit",
+    save: "Save",
     name: "Name",
     nameShort: "Name",
     unit: "Unit",
@@ -262,6 +265,8 @@ export const en: Messages = {
     title: "Recipes",
     description: "How much of each ingredient one unit of product needs.",
     newTitle: "Recipe line",
+    deleteBlocked:
+      "Cannot delete — this product already has production runs. Change would break cost history.",
   },
   purchases: {
     title: "Purchases",
@@ -271,6 +276,27 @@ export const en: Messages = {
     kindIngredient: "Ingredient",
     kindProduct: "Resale product",
     kindProductShort: "Product",
+    deleteTitle: "Delete purchase",
+    deleteConfirm: "Delete this purchase of “{name}”? This cannot be undone.",
+    deleteWarnIntro:
+      "If this item was already used later, numbers can become inconsistent:",
+    deleteWarnStock:
+      "Stock — may drop or go negative even though production/sales already happened",
+    deleteWarnAvg:
+      "Average purchase cost — recalculates from remaining purchases",
+    deleteWarnCosts:
+      "Live unit costs / recipes — change where they use the new average",
+    deleteWarnPl:
+      "P&L — some past figures can shift because they recompute from current data",
+    deleteWarnSnap:
+      "Past production runs for products using this ingredient are recalculated from the new average cost",
+    editTitle: "Edit purchase",
+    priceRequired: "Enter a price greater than zero.",
+    timelineConflict:
+      "Cannot change this purchase — stock would be missing on {date} ({kind}). Buy/use order must stay valid.",
+    conflictProduction: "production",
+    conflictWriteOff: "write-off",
+    conflictSale: "sale",
   },
   production: {
     title: "Production",

@@ -3,7 +3,7 @@ import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
 import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
-import { api, qty } from "../lib/api";
+import { api, formatApiError, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 
@@ -27,6 +27,7 @@ export function RecipesPage() {
   const [productId, setProductId] = useState("");
   const [ingredientId, setIngredientId] = useState("");
   const [qtyVal, setQtyVal] = useState("1");
+  const [actionErr, setActionErr] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -109,6 +110,14 @@ export function RecipesPage() {
           </ModalForm>
         }
       />
+      {actionErr ? (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger"
+        >
+          {actionErr}
+        </div>
+      ) : null}
       <Surface>
         <DataTable
           rows={lines}
@@ -155,8 +164,13 @@ export function RecipesPage() {
                   variant="ghost"
                   size="sm"
                   onClick={async () => {
-                    await api(`/recipes/${r.id}`, { method: "DELETE" });
-                    load();
+                    setActionErr("");
+                    try {
+                      await api(`/recipes/${r.id}`, { method: "DELETE" });
+                      await load();
+                    } catch (e) {
+                      setActionErr(formatApiError(e, t));
+                    }
                   }}
                 >
                   {t("common.delete")}

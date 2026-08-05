@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
+import { formatApiError } from "../lib/api";
 import { useT } from "../preferences/PreferencesContext";
 import { Modal } from "./Modal";
 import { Button } from "./ui";
@@ -21,15 +22,28 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
     if (!open) setErr("");
   }, [open]);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setBusy(true);
+    const form = e.currentTarget;
     setErr("");
+
+    if (!form.checkValidity()) {
+      const invalid = form.querySelector(":invalid") as
+        | HTMLInputElement
+        | HTMLSelectElement
+        | HTMLTextAreaElement
+        | null;
+      invalid?.focus();
+      setErr(t("common.formInvalid"));
+      return;
+    }
+
+    setBusy(true);
     try {
       await onSubmit();
       setOpen(false);
     } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : t("common.error"));
+      setErr(formatApiError(ex, t));
     } finally {
       setBusy(false);
     }
@@ -39,9 +53,16 @@ export function ModalForm({ title, triggerLabel, children, onSubmit }: Props) {
     <>
       <Button onClick={() => setOpen(true)}>{triggerLabel}</Button>
       <Modal title={title} open={open} onClose={() => setOpen(false)}>
-        <form onSubmit={handleSubmit} className="space-y-1">
+        <form noValidate onSubmit={handleSubmit} className="space-y-1">
           {children}
-          {err ? <p className="mt-3 text-sm text-danger">{err}</p> : null}
+          {err ? (
+            <div
+              role="alert"
+              className="mt-3 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger"
+            >
+              {err}
+            </div>
+          ) : null}
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setOpen(false)}>
               {t("common.cancel")}

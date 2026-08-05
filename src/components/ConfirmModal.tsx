@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Modal } from "./Modal";
 import { Button, Spinner } from "./ui";
 import { useT } from "../preferences/PreferencesContext";
@@ -5,10 +6,11 @@ import { useT } from "../preferences/PreferencesContext";
 type Props = {
   open: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   error?: string;
   confirmLabel?: string;
   busy?: boolean;
+  stacked?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -21,14 +23,27 @@ export function ConfirmModal({
   error,
   confirmLabel,
   busy = false,
+  stacked = false,
   onConfirm,
   onCancel,
 }: Props) {
   const t = useT();
   return (
-    <Modal open={open} onClose={busy ? () => {} : onCancel} title={title}>
-      <p className="text-sm leading-relaxed text-ink-soft">{message}</p>
-      {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
+    <Modal
+      open={open}
+      onClose={busy ? () => {} : onCancel}
+      title={title}
+      stacked={stacked}
+    >
+      <div className="text-sm leading-relaxed text-ink-soft">{message}</div>
+      {error ? (
+        <div
+          role="alert"
+          className="mt-3 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger"
+        >
+          {error}
+        </div>
+      ) : null}
       <div className="mt-6 flex justify-end gap-2">
         <Button variant="secondary" disabled={busy} onClick={onCancel}>
           {t("common.cancel")}

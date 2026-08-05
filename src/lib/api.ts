@@ -37,6 +37,50 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   throw new Error("Cannot reach API — is the server running?");
 }
 
+export class ApiError extends Error {
+  code?: string;
+  conflictDate?: string;
+  conflictKind?: string;
+  constructor(
+    message: string,
+    details?: {
+      code?: string;
+      conflictDate?: string;
+      conflictKind?: string;
+    },
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.code = details?.code;
+    this.conflictDate = details?.conflictDate;
+    this.conflictKind = details?.conflictKind;
+  }
+}
+
+export function formatApiError(
+  e: unknown,
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+): string {
+  if (e instanceof ApiError) {
+    if (e.code === "purchase_timeline") {
+      const kindLabel =
+        e.conflictKind === "production"
+          ? t("purchases.conflictProduction")
+          : e.conflictKind === "sale"
+            ? t("purchases.conflictSale")
+            : t("purchases.conflictWriteOff");
+      return t("purchases.timelineConflict", {
+        date: e.conflictDate ?? "—",
+        kind: kindLabel,
+      });
+    }
+    if (e.code === "recipe_in_use") {
+      return t("recipes.deleteBlocked");
+    }
+  }
+  return e instanceof Error ? e.message : t("common.error");
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type") && init?.body) {
@@ -49,9 +93,18 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers,
   });
-  const data = await res.json().catch(() => ({}));
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    code?: string;
+    conflictDate?: string;
+    conflictKind?: string;
+  };
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error || res.statusText);
+    throw new ApiError(data.error || res.statusText, {
+      code: data.code ?? data.error,
+      conflictDate: data.conflictDate,
+      conflictKind: data.conflictKind,
+    });
   }
   return data as T;
 }
