@@ -107,7 +107,11 @@ describe("org isolation", () => {
       method: "POST",
       userId: USER_B,
       orgId: ORG_B,
-      body: JSON.stringify({ name: "Sugar", unit: "kg" }),
+      body: JSON.stringify({
+        name: "Sugar",
+        unit: "kg",
+        category: "Dry goods",
+      }),
     });
     expect(res.status).toBe(201);
     const { id } = (await res.json()) as {
