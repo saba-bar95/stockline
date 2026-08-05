@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, qty } from "../lib/api";
+import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 
 type Row = {
@@ -21,11 +23,11 @@ type Row = {
 };
 
 export function ProductsPage() {
-  const { t, numberLocale } = usePrefs();
+  const { t, locale, numberLocale } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [unit, setUnit] = useState("კგ");
+  const [unit, setUnit] = useState("kg");
 
   const load = useCallback(async () => {
     try {
@@ -64,13 +66,19 @@ export function ProductsPage() {
                 required
               />
             </label>
-            <label className="field">
-              {t("common.unit")}
-              <select value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option value="კგ">{t("units.kg")}</option>
-                <option value="ლ">{t("units.l")}</option>
-              </select>
-            </label>
+            <div className="field">
+              <span>{t("common.unit")}</span>
+              <SelectField
+                value={unit}
+                onChange={setUnit}
+                searchable={false}
+                options={[
+                  { value: "kg", label: t("units.kg") },
+                  { value: "l", label: t("units.l") },
+                  { value: "pc", label: t("units.pc") },
+                ]}
+              />
+            </div>
           </ModalForm>
         }
       />
@@ -100,8 +108,8 @@ export function ProductsPage() {
               label: t("common.unitShort"),
               title: t("common.unit"),
               sortValue: (r) => r.unit,
-              filterValue: (r) => r.unit,
-              render: (r) => r.unit,
+              filterValue: (r) => unitLabel(locale, r.unit),
+              render: (r) => unitLabel(locale, r.unit),
             },
             {
               key: "unitCost",

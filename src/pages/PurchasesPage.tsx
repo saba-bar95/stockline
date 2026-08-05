@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -87,31 +88,24 @@ export function PurchasesPage() {
             </div>
             <div className="field">
               <span>{t("common.type")}</span>
-              <select
+              <SelectField
                 value={kind}
-                onChange={(e) =>
-                  setKind(e.target.value as "Ingredient" | "Product")
-                }
-              >
-                <option value="Ingredient">
-                  {t("purchases.kindIngredient")}
-                </option>
-                <option value="Product">{t("purchases.kindProduct")}</option>
-              </select>
+                onChange={(v) => setKind(v as "Ingredient" | "Product")}
+                searchable={false}
+                options={[
+                  { value: "Ingredient", label: t("purchases.kindIngredient") },
+                  { value: "Product", label: t("purchases.kindProduct") },
+                ]}
+              />
             </div>
             <div className="field">
               <span>{t("common.name")}</span>
-              <select
+              <SelectField
                 value={itemId}
-                onChange={(e) => setItemId(e.target.value)}
+                onChange={setItemId}
                 required
-              >
-                {options.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
+                options={options.map((o) => ({ value: o.id, label: o.name }))}
+              />
             </div>
             <div className="field">
               <span>{t("common.qty")}</span>

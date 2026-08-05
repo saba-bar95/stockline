@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -68,19 +69,18 @@ export function ProductionPage() {
               <span>{t("common.date")}</span>
               <DateField value={date} onChange={setDate} />
             </div>
-            <label className="field">
-              {t("common.product")}
-              <select
+            <div className="field">
+              <span>{t("common.product")}</span>
+              <SelectField
                 value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-              >
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={setProductId}
+                required
+                options={products.map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                }))}
+              />
+            </div>
             <label className="field">
               {t("common.qty")}
               <input

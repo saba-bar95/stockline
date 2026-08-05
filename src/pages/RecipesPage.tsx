@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
 import { api, qty } from "../lib/api";
+import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 
 type Line = {
@@ -17,7 +19,7 @@ type Line = {
 type Opt = { id: string; name: string };
 
 export function RecipesPage() {
-  const { t, numberLocale } = usePrefs();
+  const { t, locale, numberLocale } = usePrefs();
   const [lines, setLines] = useState<Line[]>([]);
   const [products, setProducts] = useState<Opt[]>([]);
   const [ingredients, setIngredients] = useState<Opt[]>([]);
@@ -69,34 +71,30 @@ export function RecipesPage() {
               load();
             }}
           >
-            <label className="field">
-              {t("common.product")}
-              <select
+            <div className="field">
+              <span>{t("common.product")}</span>
+              <SelectField
                 value={productId}
-                onChange={(e) => setProductId(e.target.value)}
+                onChange={setProductId}
                 required
-              >
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              {t("common.ingredient")}
-              <select
+                options={products.map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                }))}
+              />
+            </div>
+            <div className="field">
+              <span>{t("common.ingredient")}</span>
+              <SelectField
                 value={ingredientId}
-                onChange={(e) => setIngredientId(e.target.value)}
+                onChange={setIngredientId}
                 required
-              >
-                {ingredients.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={ingredients.map((i) => ({
+                  value: i.id,
+                  label: i.name,
+                }))}
+              />
+            </div>
             <label className="field">
               {t("common.qty")}
               <input
@@ -144,8 +142,8 @@ export function RecipesPage() {
               key: "unit",
               label: t("common.unit"),
               sortValue: (r) => r.unit,
-              filterValue: (r) => r.unit,
-              render: (r) => r.unit,
+              filterValue: (r) => unitLabel(locale, r.unit),
+              render: (r) => unitLabel(locale, r.unit),
             },
             {
               key: "actions",

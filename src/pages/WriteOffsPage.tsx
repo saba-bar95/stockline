@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -87,33 +88,27 @@ export function WriteOffsPage() {
               <span>{t("common.date")}</span>
               <DateField value={date} onChange={setDate} />
             </div>
-            <label className="field">
-              {t("common.type")}
-              <select
+            <div className="field">
+              <span>{t("common.type")}</span>
+              <SelectField
                 value={kind}
-                onChange={(e) =>
-                  setKind(e.target.value as "Ingredient" | "Product")
-                }
-              >
-                <option value="Ingredient">
-                  {t("writeOffs.kindIngredient")}
-                </option>
-                <option value="Product">{t("writeOffs.kindProduct")}</option>
-              </select>
-            </label>
-            <label className="field">
-              {t("common.name")}
-              <select
+                onChange={(v) => setKind(v as "Ingredient" | "Product")}
+                searchable={false}
+                options={[
+                  { value: "Ingredient", label: t("writeOffs.kindIngredient") },
+                  { value: "Product", label: t("writeOffs.kindProduct") },
+                ]}
+              />
+            </div>
+            <div className="field">
+              <span>{t("common.name")}</span>
+              <SelectField
                 value={itemId}
-                onChange={(e) => setItemId(e.target.value)}
-              >
-                {options.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={setItemId}
+                required
+                options={options.map((o) => ({ value: o.id, label: o.name }))}
+              />
+            </div>
             <label className="field">
               {t("common.qty")}
               <input

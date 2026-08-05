@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, today } from "../lib/api";
 import { statusLabel } from "../i18n";
@@ -138,19 +139,18 @@ export function HrPage() {
                 <span>{t("common.date")}</span>
                 <DateField value={date} onChange={setDate} />
               </div>
-              <label className="field">
-                {t("common.employee")}
-                <select
+              <div className="field">
+                <span>{t("common.employee")}</span>
+                <SelectField
                   value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                >
-                  {emps.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={setEmployeeId}
+                  required
+                  options={emps.map((e) => ({
+                    value: e.id,
+                    label: e.name,
+                  }))}
+                />
+              </div>
               <label className="field">
                 {t("common.amount")}
                 <input

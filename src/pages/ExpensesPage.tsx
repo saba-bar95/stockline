@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, today } from "../lib/api";
 import { expenseTypeLabel } from "../i18n";
@@ -68,16 +69,19 @@ export function ExpensesPage() {
               <span>{t("common.date")}</span>
               <DateField value={date} onChange={setDate} />
             </div>
-            <label className="field">
-              {t("common.type")}
-              <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="ქირა">{t("expenses.typeRent")}</option>
-                <option value="კომუნალური">
-                  {t("expenses.typeUtilities")}
-                </option>
-                <option value="სხვა">{t("expenses.typeOther")}</option>
-              </select>
-            </label>
+            <div className="field">
+              <span>{t("common.type")}</span>
+              <SelectField
+                value={type}
+                onChange={setType}
+                searchable={false}
+                options={[
+                  { value: "ქირა", label: t("expenses.typeRent") },
+                  { value: "კომუნალური", label: t("expenses.typeUtilities") },
+                  { value: "სხვა", label: t("expenses.typeOther") },
+                ]}
+              />
+            </div>
             <label className="field">
               {t("common.name")}
               <input value={name} onChange={(e) => setName(e.target.value)} />
