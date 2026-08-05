@@ -5,6 +5,7 @@ import { app } from "../index.ts";
 import { db, qGet, qRun } from "../db/index.ts";
 import {
   categoryIdPrefix,
+  findPurchaseTimelineConflict,
   ingredientStock,
   newId,
   nextCategoryCode,
@@ -216,5 +217,48 @@ describe("stock guards", () => {
     );
     const stockAfter = await ingredientStock(ORG, ING);
     expect(stockAfter).toBe(stockBefore);
+  });
+});
+
+describe("purchase timeline", () => {
+  it("blocks moving a purchase after production usage", () => {
+    const conflict = findPurchaseTimelineConflict(
+      [{ date: "2025-07-04", qty: 10 }],
+      [{ date: "2025-07-03", qty: 5, conflictKind: "production" }],
+    );
+    expect(conflict).toEqual({
+      conflictDate: "2025-07-03",
+      conflictKind: "production",
+    });
+  });
+
+  it("allows purchase on the same day as production", () => {
+    const conflict = findPurchaseTimelineConflict(
+      [{ date: "2025-07-03", qty: 10 }],
+      [{ date: "2025-07-03", qty: 5, conflictKind: "production" }],
+    );
+    expect(conflict).toBeNull();
+  });
+
+  it("allows later purchase when an earlier one covers usage", () => {
+    const conflict = findPurchaseTimelineConflict(
+      [
+        { date: "2025-07-01", qty: 10 },
+        { date: "2025-07-10", qty: 3 },
+      ],
+      [{ date: "2025-07-03", qty: 5, conflictKind: "production" }],
+    );
+    expect(conflict).toBeNull();
+  });
+
+  it("blocks selling manufactured product before production", () => {
+    const conflict = findPurchaseTimelineConflict(
+      [{ date: "2025-07-05", qty: 10 }],
+      [{ date: "2025-07-03", qty: 2, conflictKind: "sale" }],
+    );
+    expect(conflict).toEqual({
+      conflictDate: "2025-07-03",
+      conflictKind: "sale",
+    });
   });
 });

@@ -76,6 +76,382 @@ export async function recipeUnitCost(
   }
   return total;
 }
+
+export type PurchaseTimelineConflict = {
+  conflictDate: string;
+  conflictKind: "production" | "writeOff" | "sale";
+};
+
+type TimelineEvent = {
+  date: string;
+  delta: number;
+  /** outs only — what caused the drop */
+  conflictKind?: PurchaseTimelineConflict["conflictKind"];
+};
+
+/**
+ * Walk purchases vs usage in date order. Purchases on a day apply before
+ * consumption that day. Returns the first date stock would go negative.
+ */
+export function findPurchaseTimelineConflict(
+  purchaseRows: Array<{ date: string; qty: number }>,
+  outRows: Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>,
+): PurchaseTimelineConflict | null {
+  const events: TimelineEvent[] = [
+    ...purchaseRows.map((p) => ({ date: p.date, delta: p.qty })),
+    ...outRows.map((o) => ({
+      date: o.date,
+      delta: -o.qty,
+      conflictKind: o.conflictKind,
+    })),
+  ];
+  events.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    // Same day: inflows before outflows
+    if (a.delta >= 0 && b.delta < 0) return -1;
+    if (a.delta < 0 && b.delta >= 0) return 1;
+    return 0;
+  });
+  let stock = 0;
+  for (const ev of events) {
+    stock += ev.delta;
+    if (stock < -1e-9 && ev.conflictKind) {
+      return { conflictDate: ev.date, conflictKind: ev.conflictKind };
+    }
+  }
+  return null;
+}
+
+async function ingredientConsumptionEvents(
+  orgId: string,
+  ingredientId: string,
+): Promise<
+  Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>
+> {
+  const fromSnapshot = await qAll(
+    db
+      .select({
+        date: productionRuns.date,
+        qty: productionIngredientUsage.qty,
+      })
+      .from(productionIngredientUsage)
+      .innerJoin(
+        productionRuns,
+        eq(productionIngredientUsage.runId, productionRuns.id),
+      )
+      .where(
+        and(
+          orgEq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.ingredientId, ingredientId),
+        ),
+      ),
+  );
+  const fromLegacy = await qAll(
+    db
+      .select({
+        date: productionRuns.date,
+        qty: sql<number>`${productionRuns.qty} * ${recipeLines.qty}`,
+      })
+      .from(productionRuns)
+      .innerJoin(
+        recipeLines,
+        and(
+          eq(recipeLines.productId, productionRuns.productId),
+          eq(recipeLines.organizationId, productionRuns.organizationId),
+        ),
+      )
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(recipeLines.ingredientId, ingredientId),
+          sql`NOT EXISTS (SELECT 1 FROM production_ingredient_usage u WHERE u.run_id = ${productionRuns.id})`,
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({ date: writeOffs.date, qty: writeOffs.qty })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Ingredient"),
+          eq(writeOffs.itemId, ingredientId),
+        ),
+      ),
+  );
+  return [
+    ...fromSnapshot.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "production" as const,
+    })),
+    ...fromLegacy.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "production" as const,
+    })),
+    ...written.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "writeOff" as const,
+    })),
+  ];
+}
+
+async function resaleConsumptionEvents(
+  orgId: string,
+  productId: string,
+): Promise<
+  Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>
+> {
+  const sold = await qAll(
+    db
+      .select({ date: sales.date, qty: sales.qty })
+      .from(sales)
+      .where(
+        and(
+          orgEq(sales.organizationId, orgId),
+          eq(sales.source, "resale"),
+          eq(sales.itemId, productId),
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({ date: writeOffs.date, qty: writeOffs.qty })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Product"),
+          eq(writeOffs.itemId, productId),
+        ),
+      ),
+  );
+  return [
+    ...sold.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "sale" as const,
+    })),
+    ...written.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "writeOff" as const,
+    })),
+  ];
+}
+
+/** Validate purchase list vs later usage for one item (after an edit/delete). */
+export async function validatePurchaseTimeline(
+  orgId: string,
+  kind: "Ingredient" | "Product",
+  itemId: string,
+  purchaseRows: Array<{ date: string; qty: number }>,
+): Promise<PurchaseTimelineConflict | null> {
+  const outs =
+    kind === "Ingredient"
+      ? await ingredientConsumptionEvents(orgId, itemId)
+      : await resaleConsumptionEvents(orgId, itemId);
+  return findPurchaseTimelineConflict(purchaseRows, outs);
+}
+
+async function purchaseRowsForItem(
+  orgId: string,
+  kind: "Ingredient" | "Product",
+  itemId: string,
+): Promise<Array<{ date: string; qty: number }>> {
+  const rows = await qAll(
+    db
+      .select({ date: purchases.date, qty: purchases.qty })
+      .from(purchases)
+      .where(
+        and(
+          orgEq(purchases.organizationId, orgId),
+          eq(purchases.kind, kind),
+          eq(purchases.itemId, itemId),
+        ),
+      ),
+  );
+  return rows.map((r) => ({ date: r.date, qty: Number(r.qty) }));
+}
+
+/** Propose consuming an ingredient on a date (production / write-off). */
+export async function validateProposedIngredientOut(
+  orgId: string,
+  ingredientId: string,
+  out: {
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  },
+): Promise<PurchaseTimelineConflict | null> {
+  const purchasesRows = await purchaseRowsForItem(
+    orgId,
+    "Ingredient",
+    ingredientId,
+  );
+  const outs = [
+    ...(await ingredientConsumptionEvents(orgId, ingredientId)),
+    out,
+  ];
+  return findPurchaseTimelineConflict(purchasesRows, outs);
+}
+
+/** Propose consuming a resale product on a date (sale / write-off). */
+export async function validateProposedResaleOut(
+  orgId: string,
+  productId: string,
+  out: {
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  },
+): Promise<PurchaseTimelineConflict | null> {
+  const purchasesRows = await purchaseRowsForItem(orgId, "Product", productId);
+  const outs = [...(await resaleConsumptionEvents(orgId, productId)), out];
+  return findPurchaseTimelineConflict(purchasesRows, outs);
+}
+
+async function manufacturedProductIns(orgId: string, productId: string) {
+  const rows = await qAll(
+    db
+      .select({ date: productionRuns.date, qty: productionRuns.qty })
+      .from(productionRuns)
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(productionRuns.productId, productId),
+        ),
+      ),
+  );
+  return rows.map((r) => ({ date: r.date, qty: Number(r.qty) }));
+}
+
+async function manufacturedProductOuts(orgId: string, productId: string) {
+  const sold = await qAll(
+    db
+      .select({ date: sales.date, qty: sales.qty })
+      .from(sales)
+      .where(
+        and(
+          orgEq(sales.organizationId, orgId),
+          eq(sales.source, "manufactured"),
+          eq(sales.itemId, productId),
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({ date: writeOffs.date, qty: writeOffs.qty })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Product"),
+          eq(writeOffs.itemId, productId),
+        ),
+      ),
+  );
+  return [
+    ...sold.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "sale" as const,
+    })),
+    ...written.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "writeOff" as const,
+    })),
+  ];
+}
+
+/** Propose selling/writing off a manufactured product on a date. */
+export async function validateProposedManufacturedOut(
+  orgId: string,
+  productId: string,
+  out: {
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  },
+): Promise<PurchaseTimelineConflict | null> {
+  const ins = await manufacturedProductIns(orgId, productId);
+  const outs = [...(await manufacturedProductOuts(orgId, productId)), out];
+  return findPurchaseTimelineConflict(ins, outs);
+}
+
+/**
+ * After ingredient purchase edits, rewrite production run cost snapshots for
+ * every product that uses that ingredient so P&L / product costs stay in sync.
+ */
+export async function refreshProductionCostsForIngredient(
+  orgId: string,
+  ingredientId: string,
+): Promise<void> {
+  const fromRecipe = await qAll(
+    db
+      .select({ productId: recipeLines.productId })
+      .from(recipeLines)
+      .where(
+        and(
+          orgEq(recipeLines.organizationId, orgId),
+          eq(recipeLines.ingredientId, ingredientId),
+        ),
+      ),
+  );
+  const fromUsage = await qAll(
+    db
+      .select({ productId: productionRuns.productId })
+      .from(productionIngredientUsage)
+      .innerJoin(
+        productionRuns,
+        eq(productionIngredientUsage.runId, productionRuns.id),
+      )
+      .where(
+        and(
+          orgEq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.ingredientId, ingredientId),
+        ),
+      ),
+  );
+  const productIds = [
+    ...new Set(
+      [...fromRecipe, ...fromUsage]
+        .map((r) => r.productId)
+        .filter(Boolean),
+    ),
+  ];
+  for (const productId of productIds) {
+    const snap = await recipeUnitCost(orgId, productId);
+    await qRun(
+      db
+        .update(productionRuns)
+        .set({ ingredientUnitCost: snap })
+        .where(
+          and(
+            orgEq(productionRuns.organizationId, orgId),
+            eq(productionRuns.productId, productId),
+          ),
+        ),
+    );
+  }
+}
+
 export async function ingredientStock(
   orgId: string,
   ingredientId: string,

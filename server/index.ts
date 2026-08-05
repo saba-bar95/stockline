@@ -30,6 +30,11 @@ import {
   productQtyIn,
   productStock,
   recipeUnitCost,
+  refreshProductionCostsForIngredient,
+  validatePurchaseTimeline,
+  validateProposedIngredientOut,
+  validateProposedManufacturedOut,
+  validateProposedResaleOut,
   resaleStock,
   runIngredientTotal,
   runOverheadTotal,
@@ -158,6 +163,18 @@ async function ingredientHasOps(orgId: string, id: string): Promise<boolean> {
       ),
   );
   if (writeOff) return true;
+  const used = await qGet(
+    db
+      .select({ id: productionIngredientUsage.id })
+      .from(productionIngredientUsage)
+      .where(
+        and(
+          eq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.ingredientId, id),
+        ),
+      ),
+  );
+  if (used) return true;
   const recipe = await qGet(
     db
       .select({ id: recipeLines.id })
@@ -773,18 +790,93 @@ app.post("/recipes", async (c) => {
 });
 app.delete("/recipes/:id", async (c) => {
   const orgId = getOrg(c);
-  await qRun(
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const line = await qGet(
     db
-      .delete(recipeLines)
+      .select()
+      .from(recipeLines)
+      .where(and(eq(recipeLines.organizationId, orgId), eq(recipeLines.id, id))),
+  );
+  if (!line) return c.json({ error: "არ მოიძებნა" }, 404);
+  const produced = await qGet(
+    db
+      .select({ id: productionRuns.id })
+      .from(productionRuns)
       .where(
         and(
-          eq(recipeLines.organizationId, orgId),
-          eq(recipeLines.id, Number(c.req.param("id"))),
+          eq(productionRuns.organizationId, orgId),
+          eq(productionRuns.productId, line.productId),
         ),
       ),
   );
+  if (produced) {
+    return c.json(
+      {
+        error: "recipe_in_use",
+        code: "recipe_in_use",
+      },
+      409,
+    );
+  }
+  await qRun(
+    db
+      .delete(recipeLines)
+      .where(and(eq(recipeLines.organizationId, orgId), eq(recipeLines.id, id))),
+  );
   return c.json({ ok: true });
 });
+async function purchasesForItem(
+  orgId: string,
+  kind: "Ingredient" | "Product",
+  itemId: string,
+) {
+  return qAll(
+    db
+      .select({
+        id: purchases.id,
+        date: purchases.date,
+        qty: purchases.qty,
+      })
+      .from(purchases)
+      .where(
+        and(
+          eq(purchases.organizationId, orgId),
+          eq(purchases.kind, kind),
+          eq(purchases.itemId, itemId),
+        ),
+      ),
+  );
+}
+
+async function timelineErrorForItem(
+  orgId: string,
+  kind: "Ingredient" | "Product",
+  itemId: string,
+  rows: Array<{ date: string; qty: number }>,
+) {
+  const conflict = await validatePurchaseTimeline(orgId, kind, itemId, rows);
+  if (!conflict) return null;
+  return {
+    error: "purchase_timeline",
+    code: "purchase_timeline",
+    conflictDate: conflict.conflictDate,
+    conflictKind: conflict.conflictKind,
+  };
+}
+
+function timelineJson(conflict: {
+  conflictDate: string;
+  conflictKind: string;
+}) {
+  return {
+    error: "purchase_timeline",
+    code: "purchase_timeline",
+    conflictDate: conflict.conflictDate,
+    conflictKind: conflict.conflictKind,
+  };
+}
+
 // —— Purchases ——
 app.get("/purchases", async (c) => {
   const orgId = getOrg(c);
@@ -806,7 +898,7 @@ app.post("/purchases", async (c) => {
       kind: z.enum(["Ingredient", "Product"]),
       itemId: z.string(),
       qty: z.number().positive(),
-      unitPrice: z.number().nonnegative(),
+      unitPrice: z.number().positive(),
       note: z.string().optional(),
     })
     .parse(await c.req.json());
@@ -823,7 +915,125 @@ app.post("/purchases", async (c) => {
       note: body.note ?? "",
     }),
   );
+  if (body.kind === "Ingredient") {
+    await refreshProductionCostsForIngredient(orgId, body.itemId);
+  }
   return c.json({ ok: true }, 201);
+});
+app.patch("/purchases/:id", async (c) => {
+  const orgId = getOrg(c);
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const body = z
+    .object({
+      date: z.string(),
+      kind: z.enum(["Ingredient", "Product"]),
+      itemId: z.string(),
+      qty: z.number().positive(),
+      unitPrice: z.number().positive(),
+      note: z.string().optional(),
+    })
+    .parse(await c.req.json());
+  const existing = await qGet(
+    db
+      .select()
+      .from(purchases)
+      .where(and(eq(purchases.organizationId, orgId), eq(purchases.id, id))),
+  );
+  if (!existing) return c.json({ error: "არ მოიძებნა" }, 404);
+
+  const sameItem =
+    existing.kind === body.kind && existing.itemId === body.itemId;
+  if (sameItem) {
+    const rows = (await purchasesForItem(orgId, body.kind, body.itemId)).map(
+      (p) =>
+        p.id === id
+          ? { date: body.date, qty: body.qty }
+          : { date: p.date, qty: p.qty },
+    );
+    const bad = await timelineErrorForItem(orgId, body.kind, body.itemId, rows);
+    if (bad) return c.json(bad, 400);
+  } else {
+    const oldRows = (await purchasesForItem(
+      orgId,
+      existing.kind as "Ingredient" | "Product",
+      existing.itemId,
+    ))
+      .filter((p) => p.id !== id)
+      .map((p) => ({ date: p.date, qty: p.qty }));
+    const oldBad = await timelineErrorForItem(
+      orgId,
+      existing.kind as "Ingredient" | "Product",
+      existing.itemId,
+      oldRows,
+    );
+    if (oldBad) return c.json(oldBad, 400);
+
+    const newRows = [
+      ...(await purchasesForItem(orgId, body.kind, body.itemId)).map((p) => ({
+        date: p.date,
+        qty: p.qty,
+      })),
+      { date: body.date, qty: body.qty },
+    ];
+    const newBad = await timelineErrorForItem(
+      orgId,
+      body.kind,
+      body.itemId,
+      newRows,
+    );
+    if (newBad) return c.json(newBad, 400);
+  }
+
+  const total = body.qty * body.unitPrice;
+  await qRun(
+    db
+      .update(purchases)
+      .set({
+        date: body.date,
+        kind: body.kind,
+        itemId: body.itemId,
+        qty: body.qty,
+        unitPrice: body.unitPrice,
+        total,
+        note: body.note ?? "",
+      })
+      .where(and(eq(purchases.organizationId, orgId), eq(purchases.id, id))),
+  );
+  const refreshIds = new Set<string>();
+  if (existing.kind === "Ingredient") refreshIds.add(existing.itemId);
+  if (body.kind === "Ingredient") refreshIds.add(body.itemId);
+  for (const ingredientId of refreshIds) {
+    await refreshProductionCostsForIngredient(orgId, ingredientId);
+  }
+  return c.json({ ok: true });
+});
+app.delete("/purchases/:id", async (c) => {
+  const orgId = getOrg(c);
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const existing = await qGet(
+    db
+      .select()
+      .from(purchases)
+      .where(and(eq(purchases.organizationId, orgId), eq(purchases.id, id))),
+  );
+  if (!existing) return c.json({ error: "არ მოიძებნა" }, 404);
+  const kind = existing.kind as "Ingredient" | "Product";
+  const rows = (await purchasesForItem(orgId, kind, existing.itemId))
+    .filter((p) => p.id !== id)
+    .map((p) => ({ date: p.date, qty: p.qty }));
+  const bad = await timelineErrorForItem(orgId, kind, existing.itemId, rows);
+  if (bad) return c.json(bad, 400);
+  await qRun(
+    db
+      .delete(purchases)
+      .where(and(eq(purchases.organizationId, orgId), eq(purchases.id, id))),
+  );
+  if (existing.kind === "Ingredient") {
+    await refreshProductionCostsForIngredient(orgId, existing.itemId);
+  }
+  return c.json({ ok: true });
 });
 // —— Production ——
 app.get("/production", async (c) => {
@@ -912,6 +1122,16 @@ app.post("/production", async (c) => {
         400,
       );
     }
+    const conflict = await validateProposedIngredientOut(
+      orgId,
+      line.ingredientId,
+      {
+        date: body.date,
+        qty: need,
+        conflictKind: "production",
+      },
+    );
+    if (conflict) return c.json(timelineJson(conflict), 400);
   }
   const snap = await recipeUnitCost(orgId, body.productId);
   const run = await qGet(
@@ -970,6 +1190,19 @@ app.post("/sales", async (c) => {
   if (stock + 1e-9 < body.qty) {
     return c.json({ error: `არასაკმარისი ნაშთი (არის ${stock})` }, 400);
   }
+  const conflict =
+    body.source === "manufactured"
+      ? await validateProposedManufacturedOut(orgId, body.itemId, {
+          date: body.date,
+          qty: body.qty,
+          conflictKind: "sale",
+        })
+      : await validateProposedResaleOut(orgId, body.itemId, {
+          date: body.date,
+          qty: body.qty,
+          conflictKind: "sale",
+        });
+  if (conflict) return c.json(timelineJson(conflict), 400);
   await qRun(
     db.insert(sales).values({
       organizationId: orgId,
@@ -1008,6 +1241,7 @@ app.post("/write-offs", async (c) => {
     })
     .parse(await c.req.json());
   let stock = 0;
+  let isManufactured = false;
   if (body.kind === "Ingredient") {
     stock = await ingredientStock(orgId, body.itemId);
   } else {
@@ -1022,6 +1256,7 @@ app.post("/write-offs", async (c) => {
           ),
         ),
     );
+    isManufactured = Boolean(prod);
     stock = prod
       ? await productStock(orgId, body.itemId)
       : await resaleStock(orgId, body.itemId);
@@ -1029,6 +1264,25 @@ app.post("/write-offs", async (c) => {
   if (stock + 1e-9 < body.qty) {
     return c.json({ error: `არასაკმარისი ნაშთი (არის ${stock})` }, 400);
   }
+  const conflict =
+    body.kind === "Ingredient"
+      ? await validateProposedIngredientOut(orgId, body.itemId, {
+          date: body.date,
+          qty: body.qty,
+          conflictKind: "writeOff",
+        })
+      : isManufactured
+        ? await validateProposedManufacturedOut(orgId, body.itemId, {
+            date: body.date,
+            qty: body.qty,
+            conflictKind: "writeOff",
+          })
+        : await validateProposedResaleOut(orgId, body.itemId, {
+            date: body.date,
+            qty: body.qty,
+            conflictKind: "writeOff",
+          });
+  if (conflict) return c.json(timelineJson(conflict), 400);
   await qRun(
     db.insert(writeOffs).values({
       organizationId: orgId,
