@@ -117,6 +117,16 @@ export function migrate() {
     );
     CREATE INDEX IF NOT EXISTS production_org_idx ON production_runs(organization_id);
 
+    CREATE TABLE IF NOT EXISTS production_ingredient_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id TEXT NOT NULL REFERENCES organizations(id),
+      run_id INTEGER NOT NULL,
+      ingredient_id TEXT NOT NULL,
+      qty REAL NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS prod_ing_usage_org_idx ON production_ingredient_usage(organization_id);
+    CREATE INDEX IF NOT EXISTS prod_ing_usage_run_idx ON production_ingredient_usage(run_id);
+
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       organization_id TEXT NOT NULL REFERENCES organizations(id),

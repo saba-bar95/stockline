@@ -131,6 +131,23 @@ export const productionRuns = pgTable(
   (t) => [index("production_org_idx").on(t.organizationId)],
 );
 
+export const productionIngredientUsage = pgTable(
+  "production_ingredient_usage",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    runId: integer("run_id").notNull(),
+    ingredientId: text("ingredient_id").notNull(),
+    qty: real("qty").notNull(),
+  },
+  (t) => [
+    index("prod_ing_usage_org_idx").on(t.organizationId),
+    index("prod_ing_usage_run_idx").on(t.runId),
+  ],
+);
+
 export const sales = pgTable(
   "sales",
   {

@@ -131,6 +131,24 @@ export const productionRuns = sqliteTable(
   (t) => [index("production_org_idx").on(t.organizationId)],
 );
 
+/** Ingredient qty consumed per production run (snapshot at run time). */
+export const productionIngredientUsage = sqliteTable(
+  "production_ingredient_usage",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    runId: integer("run_id").notNull(),
+    ingredientId: text("ingredient_id").notNull(),
+    qty: real("qty").notNull(),
+  },
+  (t) => [
+    index("prod_ing_usage_org_idx").on(t.organizationId),
+    index("prod_ing_usage_run_idx").on(t.runId),
+  ],
+);
+
 export const sales = sqliteTable(
   "sales",
   {
