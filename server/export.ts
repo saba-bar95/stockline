@@ -171,13 +171,13 @@ export async function handleExportCsv(
   return new Response(body, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="mise-${entity}.csv"`,
+      "Content-Disposition": `attachment; filename="stockline-${entity}.csv"`,
     },
   });
 }
 export async function handleExportWorkbook(_c: Context, orgId: string) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Mise";
+  wb.creator = "Stockline";
   wb.created = new Date();
   for (const entity of ENTITIES) {
     const rows = await entityRows(orgId, entity);
@@ -197,7 +197,7 @@ export async function handleExportWorkbook(_c: Context, orgId: string) {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": 'attachment; filename="mise-export.xlsx"',
+      "Content-Disposition": 'attachment; filename="stockline-export.xlsx"',
     },
   });
 }

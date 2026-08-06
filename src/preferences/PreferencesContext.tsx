@@ -14,7 +14,8 @@ export type Theme = "light" | "dark";
 export type FontSize = "sm" | "md" | "lg";
 
 const FONT_CYCLE: FontSize[] = ["sm", "md", "lg"];
-const STORAGE_KEY = "mise-prefs";
+const STORAGE_KEY = "stockline-prefs";
+const LEGACY_STORAGE_KEYS = ["mise-prefs", "mza-prefs"] as const;
 const QTY_DECIMALS_MIN = 0;
 const QTY_DECIMALS_MAX = 4;
 
@@ -47,7 +48,13 @@ function clampQtyDecimals(n: unknown): number {
 
 function readStored(): Prefs {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      for (const key of LEGACY_STORAGE_KEYS) {
+        raw = localStorage.getItem(key);
+        if (raw) break;
+      }
+    }
     if (!raw)
       return { locale: "ka", theme: "light", fontSize: "md", qtyDecimals: 2 };
     const parsed = JSON.parse(raw) as Partial<Prefs>;

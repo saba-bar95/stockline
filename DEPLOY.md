@@ -1,7 +1,11 @@
-# Mise — production deploy (Neon + Railway API + Vercel UI)
+# Stockline — production deploy (Neon + Railway API + Vercel UI)
 
 ეს არის **გზა 2**: Postgres Neon + ცალკე API ჰოსტი + Vercel frontend.
 ლოკალური SQLite რჩება განვითარებისთვის (`DATABASE_URL` ცარიელი).
+
+პროდუქტი: **Stockline** — მასალები, შემადგენლობა, წარმოება, გაყიდვები, ხელფასები, ხარჯები და მოგება-ზარალი.
+განსაზღვრული დომენები (შემდეგ): `stockline.app`, `stockline.io`, `getstockline.com`.
+მიმდინარე ჰოსტები ჯერ რჩება `mise-*` URL-ებით — გადარქმევა ხელით.
 
 ---
 
@@ -49,7 +53,7 @@ DATABASE_URL="postgresql://USER:PASS@HOST/neondb?sslmode=require" npm run db:pus
 
 წარმატებისას Neon-ში გამოჩნდება ცხრილები: `organizations`, `ingredients`, …
 
-> ლოკალური Excel მონაცემები Neon-ში **ავტომატურად არ გადადის**. Production ცარიელი kitchen-ებით იწყება; მომხმარებლები Clerk-ით შედიან და საკუთარ org-ს ქმნიან.
+> ლოკალური Excel მონაცემები Neon-ში **ავტომატურად არ გადადის**. Production ცარიელი ორგანიზაციებით იწყება; მომხმარებლები Clerk-ით შედიან და საკუთარ org-ს ქმნიან.
 
 ---
 
@@ -79,7 +83,7 @@ npx tsx server/run.ts
    `https://mise-api-production-xxxx.up.railway.app`
 5. შეამოწმე:  
    `https://YOUR_RAILWAY_HOST/api/health`  
-   პასუხი უნდა იყოს `{"ok":true,"app":"mise"}`.
+   პასუხი უნდა იყოს `{"ok":true,"app":"stockline"}`.
 
 ---
 
@@ -133,7 +137,7 @@ Clerk Dashboard → შენი აპლიკაცია:
 ## ნაბიჯი 5 — შემოწმება
 
 1. გახსენი Vercel URL → უნდა გამოჩნდეს sign-in.
-2. დარეგისტრირდი / შეხედი → kitchen UI.
+2. დარეგისტრირდი / შეხედი → Stockline UI.
 3. დაამატე ინგრედიენტი → Neon Table Editor-ში უნდა ჩანდეს `ingredients` row შენი `organization_id`-ით.
 4. Settings → Excel/CSV export — უნდა მუშაობდეს (ორგანიზაციის მონაცემები მხოლოდ).
 

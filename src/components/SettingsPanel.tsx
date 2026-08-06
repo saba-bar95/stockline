@@ -271,7 +271,7 @@ export function SettingsPanel() {
                     try {
                       await downloadExport(
                         "/export/workbook.xlsx",
-                        "mise-export.xlsx",
+                        "stockline-export.xlsx",
                       );
                     } catch (e) {
                       setExportErr(
@@ -292,7 +292,7 @@ export function SettingsPanel() {
                     setExportBusy(true);
                     setExportErr("");
                     try {
-                      await downloadExport("/export/csv/pl", "mise-pl.csv");
+                      await downloadExport("/export/csv/pl", "stockline-pl.csv");
                     } catch (e) {
                       setExportErr(
                         e instanceof Error ? e.message : "Export failed",

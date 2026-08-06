@@ -1,22 +1,26 @@
-# Mise
+# Stockline
 
-Multi-tenant kitchen ops: stock, recipes, production, sales, overhead, and P&L — with Excel-style cost logic.
+Multi-tenant production ops for companies that make products from materials: stock, compositions, production, sales, payroll, expenses, and P&L — with Excel-style unit-cost logic.
 
-Each signed-in kitchen only sees its own data (`organizationId` scoping). Built as a portfolio SaaS-style app (Clerk auth, Neon in production).
+Built for **operations managers, accountants, directors, and owners** who need materials → compositions → production → sales to stay consistent.
 
-**Live:** [mise-app-hazel.vercel.app](https://mise-app-hazel.vercel.app)
+Each signed-in organization only sees its own data (`organizationId` scoping). Auth via Clerk; Neon Postgres in production.
+
+**Live:** [mise-app-hazel.vercel.app](https://mise-app-hazel.vercel.app) (hosting URLs unchanged for now)
+
+**Intended domains** (buy / wire later): `stockline.app`, `stockline.io`, `getstockline.com`
 
 ## Features
 
 | Area | What it does |
 |------|----------------|
-| **Ingredients** | Stock, avg purchase cost, filters/sort/pagination, double-click movement history |
-| **Resale** | Bought-for-resale products |
-| **Products** | Manufactured items — ingredient + overhead unit cost (Excel parity) |
-| **Recipes** | Per-unit ingredient lines |
-| **Purchases / Production / Sales / Write-offs** | Day-to-day ops with stock checks |
-| **HR / Payroll** | Employees and daily pay → daily overhead pool |
-| **Overhead expenses** | Rent/utilities spread by month; other costs in daily pool |
+| **Materials** | Stock, avg purchase cost, filters/sort/pagination, movement history |
+| **Merchandise** | Bought-for-resale products |
+| **Products** | Manufactured items — material + overhead unit cost (Excel parity) |
+| **Compositions** | Per-unit material lines (bill of materials) |
+| **Purchases / Production / Sales / Write-offs** | Day-to-day ops with stock and date checks |
+| **Payroll** | Employees and daily pay → daily overhead pool |
+| **Expenses** | Rent/utilities spread by month; other costs in daily pool |
 | **P&L** | Day / week / month — revenue, COGS, write-offs, unallocated OH, net |
 | **Settings** | Theme, font size, locale (KA/EN), org rename, CSV/Excel export |
 | **Auth** | Email + Google via Clerk; custom sign-in/up UI |
@@ -83,7 +87,7 @@ See `.env.example`. Important ones:
 | `CLERK_SECRET_KEY` | Local `.env` + **Railway** | JWT verify on API |
 | `DATABASE_URL` | Local optional / **Railway** + Neon push | Empty → SQLite; `postgresql://…` → Neon |
 | `CORS_ORIGIN` | **Railway** | e.g. `https://mise-app-hazel.vercel.app` |
-| `MAX_ORGS` / `REGISTRATION_OPEN` | Railway | Cap / pause new kitchens |
+| `MAX_ORGS` / `REGISTRATION_OPEN` | Railway | Cap / pause new organizations |
 | `PORT` | Railway | Default `3001` |
 
 ## Auth & tenancy
@@ -97,11 +101,11 @@ Never trust a client-supplied organization id.
 
 ## Cost model (Excel parity)
 
-- Ingredient average cost from purchases  
-- Production snapshots ingredient unit cost  
+- Material average cost from purchases  
+- Production snapshots material unit cost  
 - Daily overhead pool = payroll + dated OH (excl. rent/utilities/salary mirrors) + (rent+utilities)/daysInMonth  
-- Pool allocated to runs by ingredient-cost weight  
-- Product full unit cost = weighted production ingredient + OH  
+- Pool allocated to runs by material-cost weight  
+- Product full unit cost = weighted production material + OH  
 
 ## Scripts
 

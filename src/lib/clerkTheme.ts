@@ -37,7 +37,7 @@ export const kaGE = {
     ...enUS.signIn,
     start: {
       ...enUS.signIn?.start,
-      title: "შესვლა Mise-ში",
+      title: "შესვლა Stockline-ში",
       subtitle: "კეთილი იყოს შენი დაბრუნება",
       actionText: "არ გაქვს ანგარიში?",
       actionLink: "რეგისტრაცია",
@@ -70,8 +70,8 @@ export const kaGE = {
     ...enUS.signUp,
     start: {
       ...enUS.signUp?.start,
-      title: "შექმენი Mise ანგარიში",
-      subtitle: "დაიწყე შენი სამზარეულოს აღრიცხვა",
+      title: "შექმენი Stockline ანგარიში",
+      subtitle: "მასალები · შემადგენლობა · მოგება — დაიწყე აქ",
       actionText: "უკვე გაქვს ანგარიში?",
       actionLink: "შესვლა",
     },
@@ -194,14 +194,14 @@ export const kaGE = {
   },
 } as Loc;
 
-export const enMise: Loc = {
+export const enStockline: Loc = {
   ...enUS,
   signIn: {
     ...enUS.signIn,
     start: {
       ...enUS.signIn?.start,
-      title: "Sign in to Mise",
-      subtitle: "Welcome back to your kitchen",
+      title: "Sign in to Stockline",
+      subtitle: "Welcome back to your business",
     },
     alternativeMethods: {
       ...enUS.signIn?.alternativeMethods,
@@ -214,14 +214,14 @@ export const enMise: Loc = {
     ...enUS.signUp,
     start: {
       ...enUS.signUp?.start,
-      title: "Create your Mise account",
-      subtitle: "Stock · recipes · profit — start here",
+      title: "Create your Stockline account",
+      subtitle: "Stock · compositions · profit — start here",
     },
   },
 };
 
 export function clerkLocalization(locale: "ka" | "en"): Loc {
-  return locale === "ka" ? kaGE : enMise;
+  return locale === "ka" ? kaGE : enStockline;
 }
 
 export const clerkAppearance = {

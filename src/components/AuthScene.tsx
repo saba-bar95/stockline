@@ -7,7 +7,7 @@ import {
 } from "react";
 import { cn } from "../lib/cn";
 
-/** Ingredients on rustic wood — no people (Magnific-style flat lays). */
+/** Materials / production flat lays — no people. */
 const PHOTOS = [
   "https://images.unsplash.com/photo-1498837167922-ddd27525b352?auto=format&fit=crop&w=2400&q=85",
   "https://images.unsplash.com/photo-1466637574441-749b8f19452f?auto=format&fit=crop&w=2400&q=85",
@@ -171,7 +171,7 @@ export function AuthHero({
       <div className="auth-hero-enter auth-hero-delay-2 mt-10 flex items-center gap-3">
         <div className="h-px w-24 bg-linear-to-r from-teal to-transparent" />
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
-          mise en place
+          stock · compositions · profit
         </span>
       </div>
     </div>

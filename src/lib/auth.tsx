@@ -22,6 +22,7 @@ import {
 } from "react-router-dom";
 import { CustomSignInForm, CustomSignUpForm } from "../components/AuthForms";
 import { AuthHero, AuthScene } from "../components/AuthScene";
+import { BrandMark } from "../components/BrandMark";
 import { parseLocale } from "./api";
 import {
   clerkAppearance,
@@ -224,10 +225,13 @@ function AuthShell({
 
         <Link
           to={`/${locale}/sign-in`}
-          className="absolute left-1/2 -translate-x-1/2 font-display text-4xl font-semibold tracking-tight sm:text-5xl"
+          className="absolute left-1/2 -translate-x-1/2 font-display text-2xl font-semibold tracking-tight sm:text-3xl"
         >
-          <span className="auth-logo-shimmer bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
-            MISE
+          <span className="inline-flex items-center gap-2.5">
+            <BrandMark className="size-9 sm:size-10" />
+            <span className="auth-logo-shimmer bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
+              Stockline
+            </span>
           </span>
         </Link>
 

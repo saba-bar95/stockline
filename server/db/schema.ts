@@ -7,7 +7,7 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 
-/** Multi-tenant kitchen ops. Local SQLite; same shape maps to Neon Postgres in production. */
+/** Multi-tenant production ops. Local SQLite; same shape maps to Neon Postgres in production. */
 
 export const organizations = sqliteTable("organizations", {
   id: text("id").primaryKey(),

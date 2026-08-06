@@ -27,7 +27,9 @@ import { usePrefs } from "./preferences/PreferencesContext";
 function storedLocale(): Locale {
   try {
     const raw =
-      localStorage.getItem("mise-prefs") || localStorage.getItem("mza-prefs");
+      localStorage.getItem("stockline-prefs") ||
+      localStorage.getItem("mise-prefs") ||
+      localStorage.getItem("mza-prefs");
     if (!raw) return "ka";
     const parsed = JSON.parse(raw) as { locale?: string };
     return parsed.locale === "en" ? "en" : "ka";

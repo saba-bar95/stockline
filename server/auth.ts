@@ -54,7 +54,7 @@ async function bootstrapOrg(userId: string, displayName?: string) {
       ?.c ?? 0;
   if (count >= maxOrgs()) {
     return {
-      error: `Free tier is full (${maxOrgs()} kitchens). New signups are paused.`,
+      error: `Free tier is full (${maxOrgs()} organizations). New signups are paused.`,
       status: 403 as const,
     };
   }

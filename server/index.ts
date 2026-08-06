@@ -26,8 +26,6 @@ import {
   plDetails,
   plPeriodRanges,
   productFullUnitCost,
-  productIngredientUnitCost,
-  productOverheadUnitCost,
   productQtyIn,
   productStock,
   productsListEnriched,
@@ -118,7 +116,7 @@ app.onError((err, c) => {
   }
   return c.json({ error: "Something went wrong" }, 500);
 });
-app.get("/health", (c) => c.json({ ok: true, app: "mise" }));
+app.get("/health", (c) => c.json({ ok: true, app: "stockline" }));
 app.get("/me", (c) =>
   c.json({
     userId: c.get("userId"),

@@ -9,6 +9,7 @@ import {
 } from "../preferences/CountsContext";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { SettingsPanel } from "./SettingsPanel";
+import { BrandMark } from "./BrandMark";
 
 export function Layout() {
   return (
@@ -66,9 +67,12 @@ function LayoutShell() {
           <div className="mb-6 shrink-0 px-2">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-display text-[1.95rem] leading-none font-semibold tracking-tight">
-                  <span className="bg-linear-to-r from-teal to-teal-deep bg-clip-text text-transparent uppercase">
-                    MISE
+                <p className="font-display text-[1.35rem] leading-none font-semibold tracking-tight">
+                  <span className="inline-flex items-center gap-2.5">
+                    <BrandMark className="size-9" />
+                    <span className="bg-linear-to-r from-teal to-teal-deep bg-clip-text text-transparent uppercase">
+                      Stockline
+                    </span>
                   </span>
                 </p>
               </div>
@@ -155,9 +159,12 @@ function LayoutShell() {
           >
             <BurgerIcon className="size-5" />
           </button>
-          <p className="font-display text-xl font-semibold tracking-tight">
-            <span className="bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
-              MISE
+          <p className="font-display text-lg font-semibold tracking-tight">
+            <span className="inline-flex items-center gap-2">
+              <BrandMark className="size-7" />
+              <span className="bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
+                Stockline
+              </span>
             </span>
           </p>
         </header>
