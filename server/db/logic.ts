@@ -12,6 +12,7 @@ const {
   resaleProducts,
   sales,
   writeOffs,
+  ingredients,
 } = s;
 function orgEq<
   T extends {
@@ -490,6 +491,345 @@ export async function ingredientStock(
   return bought - usedInProd - written;
 }
 
+/** Batch-enrich ingredients list — few GROUP BY queries instead of N×8 round-trips. */
+export async function ingredientsListEnriched(orgId: string) {
+  const rows = await qAll(
+    db
+      .select()
+      .from(ingredients)
+      .where(eq(ingredients.organizationId, orgId))
+      .orderBy(ingredients.name),
+  );
+  if (rows.length === 0) return [];
+
+  const [
+    purchaseStats,
+    usageSnap,
+    usageLegacy,
+    writeOffStats,
+    purchaseIds,
+    writeOffIds,
+    recipeIds,
+    usageIds,
+  ] = await Promise.all([
+    qAll(
+      db
+        .select({
+          itemId: purchases.itemId,
+          qty: sql<number>`coalesce(sum(${purchases.qty}), 0)`,
+          total: sql<number>`coalesce(sum(${purchases.total}), 0)`,
+          lastDate: sql<string | null>`max(${purchases.date})`,
+        })
+        .from(purchases)
+        .where(
+          and(
+            orgEq(purchases.organizationId, orgId),
+            eq(purchases.kind, "Ingredient"),
+          ),
+        )
+        .groupBy(purchases.itemId),
+    ),
+    qAll(
+      db
+        .select({
+          ingredientId: productionIngredientUsage.ingredientId,
+          qty: sql<number>`coalesce(sum(${productionIngredientUsage.qty}), 0)`,
+        })
+        .from(productionIngredientUsage)
+        .where(orgEq(productionIngredientUsage.organizationId, orgId))
+        .groupBy(productionIngredientUsage.ingredientId),
+    ),
+    qAll(
+      db
+        .select({
+          ingredientId: recipeLines.ingredientId,
+          qty: sql<number>`coalesce(sum(${productionRuns.qty} * ${recipeLines.qty}), 0)`,
+        })
+        .from(productionRuns)
+        .innerJoin(
+          recipeLines,
+          and(
+            eq(recipeLines.productId, productionRuns.productId),
+            eq(recipeLines.organizationId, productionRuns.organizationId),
+          ),
+        )
+        .where(
+          and(
+            orgEq(productionRuns.organizationId, orgId),
+            sql`NOT EXISTS (SELECT 1 FROM production_ingredient_usage u WHERE u.run_id = ${productionRuns.id})`,
+          ),
+        )
+        .groupBy(recipeLines.ingredientId),
+    ),
+    qAll(
+      db
+        .select({
+          itemId: writeOffs.itemId,
+          qty: sql<number>`coalesce(sum(${writeOffs.qty}), 0)`,
+        })
+        .from(writeOffs)
+        .where(
+          and(
+            orgEq(writeOffs.organizationId, orgId),
+            eq(writeOffs.kind, "Ingredient"),
+          ),
+        )
+        .groupBy(writeOffs.itemId),
+    ),
+    qAll(
+      db
+        .select({ itemId: purchases.itemId })
+        .from(purchases)
+        .where(
+          and(
+            orgEq(purchases.organizationId, orgId),
+            eq(purchases.kind, "Ingredient"),
+          ),
+        )
+        .groupBy(purchases.itemId),
+    ),
+    qAll(
+      db
+        .select({ itemId: writeOffs.itemId })
+        .from(writeOffs)
+        .where(
+          and(
+            orgEq(writeOffs.organizationId, orgId),
+            eq(writeOffs.kind, "Ingredient"),
+          ),
+        )
+        .groupBy(writeOffs.itemId),
+    ),
+    qAll(
+      db
+        .select({ ingredientId: recipeLines.ingredientId })
+        .from(recipeLines)
+        .where(orgEq(recipeLines.organizationId, orgId))
+        .groupBy(recipeLines.ingredientId),
+    ),
+    qAll(
+      db
+        .select({ ingredientId: productionIngredientUsage.ingredientId })
+        .from(productionIngredientUsage)
+        .where(orgEq(productionIngredientUsage.organizationId, orgId))
+        .groupBy(productionIngredientUsage.ingredientId),
+    ),
+  ]);
+
+  const bought = new Map(
+    purchaseStats.map((r) => [
+      r.itemId,
+      {
+        qty: Number(r.qty),
+        total: Number(r.total),
+        lastDate: r.lastDate,
+      },
+    ]),
+  );
+  const used = new Map<string, number>();
+  for (const r of usageSnap) {
+    used.set(r.ingredientId, (used.get(r.ingredientId) ?? 0) + Number(r.qty));
+  }
+  for (const r of usageLegacy) {
+    used.set(r.ingredientId, (used.get(r.ingredientId) ?? 0) + Number(r.qty));
+  }
+  const written = new Map(
+    writeOffStats.map((r) => [r.itemId, Number(r.qty)]),
+  );
+  const hasOps = new Set<string>([
+    ...purchaseIds.map((r) => r.itemId),
+    ...writeOffIds.map((r) => r.itemId),
+    ...recipeIds.map((r) => r.ingredientId),
+    ...usageIds.map((r) => r.ingredientId),
+  ]);
+
+  return rows.map((r) => {
+    const p = bought.get(r.id);
+    const avgCost = p && p.qty ? p.total / p.qty : 0;
+    const stock = (p?.qty ?? 0) - (used.get(r.id) ?? 0) - (written.get(r.id) ?? 0);
+    return {
+      ...r,
+      avgCost,
+      stock,
+      lastPurchaseDate: p?.lastDate ?? null,
+      canDelete: !hasOps.has(r.id),
+    };
+  });
+}
+
+/** Batch-enrich resale list. */
+export async function resaleListEnriched(orgId: string) {
+  const rows = await qAll(
+    db
+      .select()
+      .from(resaleProducts)
+      .where(eq(resaleProducts.organizationId, orgId))
+      .orderBy(resaleProducts.name),
+  );
+  if (rows.length === 0) return [];
+
+  const [purchaseStats, salesStats, writeOffStats] = await Promise.all([
+    qAll(
+      db
+        .select({
+          itemId: purchases.itemId,
+          qty: sql<number>`coalesce(sum(${purchases.qty}), 0)`,
+          total: sql<number>`coalesce(sum(${purchases.total}), 0)`,
+          lastDate: sql<string | null>`max(${purchases.date})`,
+        })
+        .from(purchases)
+        .where(
+          and(
+            orgEq(purchases.organizationId, orgId),
+            eq(purchases.kind, "Product"),
+          ),
+        )
+        .groupBy(purchases.itemId),
+    ),
+    qAll(
+      db
+        .select({
+          itemId: sales.itemId,
+          qty: sql<number>`coalesce(sum(${sales.qty}), 0)`,
+        })
+        .from(sales)
+        .where(
+          and(orgEq(sales.organizationId, orgId), eq(sales.source, "resale")),
+        )
+        .groupBy(sales.itemId),
+    ),
+    qAll(
+      db
+        .select({
+          itemId: writeOffs.itemId,
+          qty: sql<number>`coalesce(sum(${writeOffs.qty}), 0)`,
+        })
+        .from(writeOffs)
+        .where(
+          and(
+            orgEq(writeOffs.organizationId, orgId),
+            eq(writeOffs.kind, "Product"),
+          ),
+        )
+        .groupBy(writeOffs.itemId),
+    ),
+  ]);
+
+  const bought = new Map(
+    purchaseStats.map((r) => [
+      r.itemId,
+      {
+        qty: Number(r.qty),
+        total: Number(r.total),
+        lastDate: r.lastDate,
+      },
+    ]),
+  );
+  const sold = new Map(salesStats.map((r) => [r.itemId, Number(r.qty)]));
+  const written = new Map(writeOffStats.map((r) => [r.itemId, Number(r.qty)]));
+  const hasOps = new Set([
+    ...bought.keys(),
+    ...sold.keys(),
+    ...written.keys(),
+  ]);
+
+  return rows.map((r) => {
+    const p = bought.get(r.id);
+    const unitCost = p && p.qty ? p.total / p.qty : 0;
+    const stock =
+      (p?.qty ?? 0) - (sold.get(r.id) ?? 0) - (written.get(r.id) ?? 0);
+    return {
+      ...r,
+      unitCost,
+      stock,
+      stockValue: stock * unitCost,
+      lastPurchaseDate: p?.lastDate ?? null,
+      canDelete: !hasOps.has(r.id),
+    };
+  });
+}
+
+/** Batch-enrich manufactured products list via shared PlComputeCache. */
+export async function productsListEnriched(orgId: string) {
+  const rows = await qAll(
+    db
+      .select()
+      .from(products)
+      .where(eq(products.organizationId, orgId))
+      .orderBy(products.name),
+  );
+  if (rows.length === 0) return [];
+
+  const cache = new PlComputeCache(orgId);
+  await cache.warmListCosts();
+  await Promise.all(rows.map((r) => cache.productFullUnitCostCached(r.id)));
+
+  return Promise.all(
+    rows.map(async (r) => {
+      const qtyIn = await cache.productQtyInCached(r.id);
+      const ingUnit = await cache.productIngredientUnitCostCached(r.id);
+      const ohUnit = await cache.productOverheadUnitCostCached(r.id);
+      const fullUnit = await cache.productFullUnitCostCached(r.id);
+      const stock = await cache.productStockCached(r.id);
+      return {
+        ...r,
+        qtyIn,
+        unitCost: ingUnit,
+        ohUnitCost: ohUnit,
+        ohTotal: qtyIn * ohUnit,
+        fullUnitCost: fullUnit,
+        fullTotal: qtyIn * fullUnit,
+        stock,
+        stockValue: stock * fullUnit,
+        recommendedPrice: fullUnit * 3,
+      };
+    }),
+  );
+}
+
+/** Batch-enrich production runs list. */
+export async function productionListEnriched(orgId: string) {
+  const rows = await qAll(
+    db
+      .select()
+      .from(productionRuns)
+      .where(eq(productionRuns.organizationId, orgId))
+      .orderBy(desc(productionRuns.date)),
+  );
+  const names = Object.fromEntries(
+    (
+      await qAll(
+        db.select().from(products).where(eq(products.organizationId, orgId)),
+      )
+    ).map((p) => [p.id, p.name]),
+  );
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const cache = new PlComputeCache(orgId);
+  await cache.warmListCosts();
+
+  return Promise.all(
+    rows.map(async (r) => {
+      const unitSnap =
+        r.ingredientUnitCost > 0
+          ? r.ingredientUnitCost
+          : await cache.recipeUnitCostCached(r.productId);
+      const ingTotal = await cache.runIngredientTotalCached(r);
+      const ohTotal = await cache.runOverheadTotalCached(r);
+      return {
+        ...r,
+        productName: names[r.productId] ?? r.productId,
+        unitCost: unitSnap,
+        ingredientCost: ingTotal,
+        overheadCost: ohTotal,
+        fullCost: ingTotal + ohTotal,
+      };
+    }),
+  );
+}
+
 /** Snapshotted usage rows + legacy recipe fallback for runs without snapshots. */
 async function ingredientUsedInProduction(
   orgId: string,
@@ -536,6 +876,56 @@ async function ingredientUsedInProduction(
       )
     )?.q ?? 0;
   return fromSnapshot + fromLegacy;
+}
+
+/** True if this ingredient was consumed for this product in any production run. */
+export async function recipeIngredientUsedInProduction(
+  orgId: string,
+  productId: string,
+  ingredientId: string,
+): Promise<boolean> {
+  const snap = await qGet(
+    db
+      .select({ id: productionIngredientUsage.id })
+      .from(productionIngredientUsage)
+      .innerJoin(
+        productionRuns,
+        eq(productionIngredientUsage.runId, productionRuns.id),
+      )
+      .where(
+        and(
+          orgEq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.ingredientId, ingredientId),
+          eq(productionRuns.productId, productId),
+        ),
+      )
+      .limit(1),
+  );
+  if (snap) return true;
+
+  // Runs with no usage snapshots still deduct via live recipe join.
+  const legacy = await qGet(
+    db
+      .select({ id: productionRuns.id })
+      .from(productionRuns)
+      .innerJoin(
+        recipeLines,
+        and(
+          eq(recipeLines.productId, productionRuns.productId),
+          eq(recipeLines.organizationId, productionRuns.organizationId),
+          eq(recipeLines.ingredientId, ingredientId),
+        ),
+      )
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(productionRuns.productId, productId),
+          sql`NOT EXISTS (SELECT 1 FROM production_ingredient_usage u WHERE u.run_id = ${productionRuns.id})`,
+        ),
+      )
+      .limit(1),
+  );
+  return !!legacy;
 }
 
 /** One-time/idempotent: snapshot recipe usage for runs created before usage table. */
@@ -912,6 +1302,9 @@ export class PlComputeCache {
   >();
   private purchaseAvgsReady = false;
   private recipeLinesReady = false;
+  private stockMapsReady = false;
+  private soldManufactured = new Map<string, number>();
+  private writtenProducts = new Map<string, number>();
 
   private orgId: string;
 
@@ -1080,6 +1473,27 @@ export class PlComputeCache {
     return made;
   }
 
+  async productIngredientUnitCostCached(productId: string) {
+    await this.ensureRuns();
+    const qtyIn = await this.productQtyInCached(productId);
+    const recipe = await this.recipeUnitCostCached(productId);
+    if (qtyIn <= 0) return recipe;
+    const runs = this.runsByProduct.get(productId) ?? [];
+    let sumG = 0;
+    for (const run of runs) sumG += await this.runIngredientTotalCached(run);
+    return sumG / qtyIn;
+  }
+
+  async productOverheadUnitCostCached(productId: string) {
+    await this.ensureRuns();
+    const qtyIn = await this.productQtyInCached(productId);
+    if (qtyIn <= 0) return 0;
+    const runs = this.runsByProduct.get(productId) ?? [];
+    let sumH = 0;
+    for (const run of runs) sumH += await this.runOverheadTotalCached(run);
+    return sumH / qtyIn;
+  }
+
   async productFullUnitCostCached(productId: string) {
     const hit = this.productFulls.get(productId);
     if (hit !== undefined) return hit;
@@ -1100,6 +1514,70 @@ export class PlComputeCache {
     const v = sumI / qtyIn;
     this.productFulls.set(productId, v);
     return v;
+  }
+
+  private async ensureProductStockMaps() {
+    if (this.stockMapsReady) return;
+    const [soldRows, writtenRows] = await Promise.all([
+      qAll(
+        db
+          .select({
+            itemId: sales.itemId,
+            qty: sql<number>`coalesce(sum(${sales.qty}), 0)`,
+          })
+          .from(sales)
+          .where(
+            and(
+              orgEq(sales.organizationId, this.orgId),
+              eq(sales.source, "manufactured"),
+            ),
+          )
+          .groupBy(sales.itemId),
+      ),
+      qAll(
+        db
+          .select({
+            itemId: writeOffs.itemId,
+            qty: sql<number>`coalesce(sum(${writeOffs.qty}), 0)`,
+          })
+          .from(writeOffs)
+          .where(
+            and(
+              orgEq(writeOffs.organizationId, this.orgId),
+              eq(writeOffs.kind, "Product"),
+            ),
+          )
+          .groupBy(writeOffs.itemId),
+      ),
+    ]);
+    for (const row of soldRows) {
+      this.soldManufactured.set(row.itemId, Number(row.qty));
+    }
+    for (const row of writtenRows) {
+      this.writtenProducts.set(row.itemId, Number(row.qty));
+    }
+    this.stockMapsReady = true;
+  }
+
+  async productStockCached(productId: string) {
+    await this.ensureProductStockMaps();
+    const made = await this.productQtyInCached(productId);
+    return (
+      made -
+      (this.soldManufactured.get(productId) ?? 0) -
+      (this.writtenProducts.get(productId) ?? 0)
+    );
+  }
+
+  /** Warm cost caches used by products / production list endpoints. */
+  async warmListCosts() {
+    await this.ensureRuns();
+    await this.ensureRecipeLines();
+    await this.ensureOverheadRows();
+    for (const date of this.runsByDate.keys()) {
+      await this.dayGTotal(date);
+      await this.dailyPoolCached(date);
+    }
   }
 
   async writeOffUnitCost(kind: string, itemId: string) {

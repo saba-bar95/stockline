@@ -16,6 +16,7 @@ import {
   avgResaleCost,
   backfillProductionIngredientUsage,
   ingredientStock,
+  ingredientsListEnriched,
   lastPurchaseDate,
   lastResalePurchaseDate,
   newId,
@@ -29,12 +30,16 @@ import {
   productOverheadUnitCost,
   productQtyIn,
   productStock,
+  productsListEnriched,
+  productionListEnriched,
   recipeUnitCost,
+  recipeIngredientUsedInProduction,
   refreshProductionCostsForIngredient,
   validatePurchaseTimeline,
   validateProposedIngredientOut,
   validateProposedManufacturedOut,
   validateProposedResaleOut,
+  resaleListEnriched,
   resaleStock,
   runIngredientTotal,
   runOverheadTotal,
@@ -135,6 +140,74 @@ app.patch("/me/org", async (c) => {
   await renameOrg(orgId, body.name);
   return c.json({ ok: true, name: body.name.slice(0, 80) });
 });
+
+/** Lightweight nav/header counts — COUNT(*) only, no row payloads. */
+app.get("/counts", async (c) => {
+  const orgId = getOrg(c);
+  async function count(
+    table:
+      | typeof ingredients
+      | typeof resaleProducts
+      | typeof products
+      | typeof purchases
+      | typeof productionRuns
+      | typeof sales
+      | typeof writeOffs
+      | typeof employees
+      | typeof expenses,
+  ) {
+    const row = await qGet(
+      db
+        .select({ n: sql<number>`count(*)` })
+        .from(table)
+        .where(eq(table.organizationId, orgId)),
+    );
+    return Number(row?.n ?? 0);
+  }
+  // Recipes page lists only products that have at least one recipe line.
+  const recipesRow = await qGet(
+    db
+      .select({
+        n: sql<number>`count(distinct ${recipeLines.productId})`,
+      })
+      .from(recipeLines)
+      .where(eq(recipeLines.organizationId, orgId)),
+  );
+  const [
+    ingredientsN,
+    resaleN,
+    productsN,
+    purchasesN,
+    productionN,
+    salesN,
+    writeOffsN,
+    hrN,
+    expensesN,
+  ] = await Promise.all([
+    count(ingredients),
+    count(resaleProducts),
+    count(products),
+    count(purchases),
+    count(productionRuns),
+    count(sales),
+    count(writeOffs),
+    count(employees),
+    count(expenses),
+  ]);
+  return c.json({
+    ingredients: ingredientsN,
+    resale: resaleN,
+    products: productsN,
+    recipes: Number(recipesRow?.n ?? 0),
+    purchases: purchasesN,
+    production: productionN,
+    sales: salesN,
+    writeOffs: writeOffsN,
+    hr: hrN,
+    expenses: expensesN,
+  });
+});
+
 // —— Ingredients ——
 async function ingredientHasOps(orgId: string, id: string): Promise<boolean> {
   const purchase = await qGet(
@@ -190,24 +263,23 @@ async function ingredientHasOps(orgId: string, id: string): Promise<boolean> {
 }
 app.get("/ingredients", async (c) => {
   const orgId = getOrg(c);
-  const rows = await qAll(
-    db
-      .select()
-      .from(ingredients)
-      .where(eq(ingredients.organizationId, orgId))
-      .orderBy(ingredients.name),
-  );
-  return c.json(
-    await Promise.all(
-      rows.map(async (r) => ({
-        ...r,
-        avgCost: await avgIngredientCost(orgId, r.id),
-        stock: await ingredientStock(orgId, r.id),
-        lastPurchaseDate: await lastPurchaseDate(orgId, r.id),
-        canDelete: !(await ingredientHasOps(orgId, r.id)),
-      })),
-    ),
-  );
+  if (c.req.query("minimal") === "1") {
+    return c.json(
+      await qAll(
+        db
+          .select({
+            id: ingredients.id,
+            name: ingredients.name,
+            unit: ingredients.unit,
+            category: ingredients.category,
+          })
+          .from(ingredients)
+          .where(eq(ingredients.organizationId, orgId))
+          .orderBy(ingredients.name),
+      ),
+    );
+  }
+  return c.json(await ingredientsListEnriched(orgId));
 });
 app.get("/ingredients/:id/history", async (c) => {
   const orgId = getOrg(c);
@@ -427,36 +499,22 @@ app.delete("/ingredients/:id", async (c) => {
 // —— Products (manufactured) ——
 app.get("/products", async (c) => {
   const orgId = getOrg(c);
-  const rows = await qAll(
-    db
-      .select()
-      .from(products)
-      .where(eq(products.organizationId, orgId))
-      .orderBy(products.name),
-  );
-  return c.json(
-    await Promise.all(
-      rows.map(async (r) => {
-        const qtyIn = await productQtyIn(orgId, r.id);
-        const ingUnit = await productIngredientUnitCost(orgId, r.id);
-        const ohUnit = await productOverheadUnitCost(orgId, r.id);
-        const fullUnit = await productFullUnitCost(orgId, r.id);
-        const stock = await productStock(orgId, r.id);
-        return {
-          ...r,
-          qtyIn,
-          unitCost: ingUnit,
-          ohUnitCost: ohUnit,
-          ohTotal: qtyIn * ohUnit,
-          fullUnitCost: fullUnit,
-          fullTotal: qtyIn * fullUnit,
-          stock,
-          stockValue: stock * fullUnit,
-          recommendedPrice: fullUnit * 3,
-        };
-      }),
-    ),
-  );
+  if (c.req.query("minimal") === "1") {
+    return c.json(
+      await qAll(
+        db
+          .select({
+            id: products.id,
+            name: products.name,
+            unit: products.unit,
+          })
+          .from(products)
+          .where(eq(products.organizationId, orgId))
+          .orderBy(products.name),
+      ),
+    );
+  }
+  return c.json(await productsListEnriched(orgId));
 });
 app.post("/products", async (c) => {
   const orgId = getOrg(c);
@@ -480,6 +538,108 @@ app.post("/products", async (c) => {
       .values({ id, organizationId: orgId, name: body.name, unit: body.unit }),
   );
   return c.json({ id }, 201);
+});
+app.get("/products/:id/history", async (c) => {
+  const orgId = getOrg(c);
+  const id = c.req.param("id");
+  const item = await qGet(
+    db
+      .select()
+      .from(products)
+      .where(and(eq(products.organizationId, orgId), eq(products.id, id))),
+  );
+  if (!item) return c.json({ error: "არ მოიძებნა" }, 404);
+  const fullUnit = await productFullUnitCost(orgId, id);
+  const stock = await productStock(orgId, id);
+  const runs = await qAll(
+    db
+      .select()
+      .from(productionRuns)
+      .where(
+        and(
+          eq(productionRuns.organizationId, orgId),
+          eq(productionRuns.productId, id),
+        ),
+      )
+      .orderBy(desc(productionRuns.date)),
+  );
+  const produced = await Promise.all(
+    runs.map(async (run) => {
+      const g = await runIngredientTotal(orgId, run);
+      const h = await runOverheadTotal(
+        orgId,
+        run.date,
+        run.productId,
+        run.qty,
+        run.id,
+      );
+      const unitPrice = run.qty > 0 ? (g + h) / run.qty : 0;
+      return {
+        date: run.date,
+        type: "წარმოება",
+        qty: run.qty,
+        unitPrice,
+        total: g + h,
+        note: "",
+      };
+    }),
+  );
+  const sold = (
+    await qAll(
+      db
+        .select()
+        .from(sales)
+        .where(
+          and(
+            eq(sales.organizationId, orgId),
+            eq(sales.source, "manufactured"),
+            eq(sales.itemId, id),
+          ),
+        )
+        .orderBy(desc(sales.date)),
+    )
+  ).map((sRow) => ({
+    date: sRow.date,
+    type: "გაყიდვა",
+    qty: -sRow.qty,
+    unitPrice: sRow.unitPrice,
+    total: -sRow.revenue,
+    note: sRow.note,
+  }));
+  const wo = (
+    await qAll(
+      db
+        .select()
+        .from(writeOffs)
+        .where(
+          and(
+            eq(writeOffs.organizationId, orgId),
+            eq(writeOffs.kind, "Product"),
+            eq(writeOffs.itemId, id),
+          ),
+        )
+        .orderBy(desc(writeOffs.date)),
+    )
+  ).map((w) => ({
+    date: w.date,
+    type: "ჩამოწერა",
+    qty: -w.qty,
+    unitPrice: fullUnit,
+    total: -w.qty * fullUnit,
+    note: w.note,
+  }));
+  const movements = [...produced, ...sold, ...wo].sort((a, b) =>
+    a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
+  );
+  return c.json({
+    item: {
+      ...item,
+      fullUnitCost: fullUnit,
+      stock,
+      qtyIn: await productQtyIn(orgId, id),
+    },
+    movements,
+  });
 });
 // —— Resale ——
 async function resaleHasOps(orgId: string, id: string): Promise<boolean> {
@@ -526,29 +686,23 @@ async function resaleHasOps(orgId: string, id: string): Promise<boolean> {
 
 app.get("/resale", async (c) => {
   const orgId = getOrg(c);
-  const rows = await qAll(
-    db
-      .select()
-      .from(resaleProducts)
-      .where(eq(resaleProducts.organizationId, orgId))
-      .orderBy(resaleProducts.name),
-  );
-  return c.json(
-    await Promise.all(
-      rows.map(async (r) => {
-        const unitCost = await avgResaleCost(orgId, r.id);
-        const stock = await resaleStock(orgId, r.id);
-        return {
-          ...r,
-          unitCost,
-          stock,
-          stockValue: stock * unitCost,
-          lastPurchaseDate: await lastResalePurchaseDate(orgId, r.id),
-          canDelete: !(await resaleHasOps(orgId, r.id)),
-        };
-      }),
-    ),
-  );
+  if (c.req.query("minimal") === "1") {
+    return c.json(
+      await qAll(
+        db
+          .select({
+            id: resaleProducts.id,
+            name: resaleProducts.name,
+            unit: resaleProducts.unit,
+            category: resaleProducts.category,
+          })
+          .from(resaleProducts)
+          .where(eq(resaleProducts.organizationId, orgId))
+          .orderBy(resaleProducts.name),
+      ),
+    );
+  }
+  return c.json(await resaleListEnriched(orgId));
 });
 app.get("/resale/:id/history", async (c) => {
   const orgId = getOrg(c);
@@ -799,18 +953,13 @@ app.delete("/recipes/:id", async (c) => {
       .where(and(eq(recipeLines.organizationId, orgId), eq(recipeLines.id, id))),
   );
   if (!line) return c.json({ error: "არ მოიძებნა" }, 404);
-  const produced = await qGet(
-    db
-      .select({ id: productionRuns.id })
-      .from(productionRuns)
-      .where(
-        and(
-          eq(productionRuns.organizationId, orgId),
-          eq(productionRuns.productId, line.productId),
-        ),
-      ),
-  );
-  if (produced) {
+  if (
+    await recipeIngredientUsedInProduction(
+      orgId,
+      line.productId,
+      line.ingredientId,
+    )
+  ) {
     return c.json(
       {
         error: "recipe_in_use",
@@ -1038,46 +1187,7 @@ app.delete("/purchases/:id", async (c) => {
 // —— Production ——
 app.get("/production", async (c) => {
   const orgId = getOrg(c);
-  const rows = await qAll(
-    db
-      .select()
-      .from(productionRuns)
-      .where(eq(productionRuns.organizationId, orgId))
-      .orderBy(desc(productionRuns.date)),
-  );
-  const names = Object.fromEntries(
-    (
-      await qAll(
-        db.select().from(products).where(eq(products.organizationId, orgId)),
-      )
-    ).map((p) => [p.id, p.name]),
-  );
-  return c.json(
-    await Promise.all(
-      rows.map(async (r) => {
-        const unitSnap =
-          r.ingredientUnitCost > 0
-            ? r.ingredientUnitCost
-            : await recipeUnitCost(orgId, r.productId);
-        const ingTotal = await runIngredientTotal(orgId, r);
-        const ohTotal = await runOverheadTotal(
-          orgId,
-          r.date,
-          r.productId,
-          r.qty,
-          r.id,
-        );
-        return {
-          ...r,
-          productName: names[r.productId] ?? r.productId,
-          unitCost: unitSnap,
-          ingredientCost: ingTotal,
-          overheadCost: ohTotal,
-          fullCost: ingTotal + ohTotal,
-        };
-      }),
-    ),
-  );
+  return c.json(await productionListEnriched(orgId));
 });
 app.post("/production", async (c) => {
   const orgId = getOrg(c);

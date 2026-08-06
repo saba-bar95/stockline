@@ -12,6 +12,7 @@ import {
   plDetails,
   plPeriodRanges,
   plSummary,
+  recipeIngredientUsedInProduction,
 } from "../db/logic.ts";
 
 const {
@@ -28,6 +29,7 @@ const {
 const ORG = "test_pl_org";
 const USER = "test_pl_user";
 const ING = "test_pl_ing";
+const ING2 = "test_pl_ing2";
 const PROD = "test_pl_prod";
 
 function api(
@@ -217,6 +219,56 @@ describe("stock guards", () => {
     );
     const stockAfter = await ingredientStock(ORG, ING);
     expect(stockAfter).toBe(stockBefore);
+  });
+
+  it("allows deleting recipe line for ingredient never used in production", async () => {
+    await qRun(
+      db.insert(ingredients).values({
+        id: ING2,
+        organizationId: ORG,
+        name: "Salt",
+        unit: "kg",
+        category: "",
+      }),
+    );
+    const inserted = await qGet(
+      db
+        .insert(recipeLines)
+        .values({
+          organizationId: ORG,
+          productId: PROD,
+          ingredientId: ING2,
+          qty: 0.1,
+        })
+        .returning({ id: recipeLines.id }),
+    );
+    expect(
+      await recipeIngredientUsedInProduction(ORG, PROD, ING2),
+    ).toBe(false);
+    expect(await recipeIngredientUsedInProduction(ORG, PROD, ING)).toBe(true);
+
+    const delNew = await api(`/api/recipes/${inserted!.id}`, {
+      method: "DELETE",
+      userId: USER,
+      orgId: ORG,
+    });
+    expect(delNew.status).toBe(200);
+
+    const usedLine = await qGet(
+      db
+        .select({ id: recipeLines.id })
+        .from(recipeLines)
+        .where(
+          eq(recipeLines.organizationId, ORG),
+          eq(recipeLines.ingredientId, ING),
+        ),
+    );
+    const delUsed = await api(`/api/recipes/${usedLine!.id}`, {
+      method: "DELETE",
+      userId: USER,
+      orgId: ORG,
+    });
+    expect(delUsed.status).toBe(409);
   });
 });
 
