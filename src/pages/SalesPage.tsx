@@ -6,6 +6,7 @@ import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Sale = {
   id: number;
@@ -34,14 +35,13 @@ export function SalesPage() {
 
   const load = useCallback(async () => {
     try {
-      const [s, p, r] = await Promise.all([
-        api<Sale[]>("/sales"),
-        api<Opt[]>("/products"),
-        api<Opt[]>("/resale"),
-      ]);
-      setRows(s);
-      setProducts(p);
-      setResale(r);
+      const sP = api<Sale[]>("/sales").then((s) => {
+        setRows(s);
+        setLoading(false);
+      });
+      const pP = api<Opt[]>("/products?minimal=1").then(setProducts);
+      const rP = api<Opt[]>("/resale?minimal=1").then(setResale);
+      await Promise.all([sP, pP, rP]);
     } finally {
       setLoading(false);
     }
@@ -61,11 +61,14 @@ export function SalesPage() {
     [...products, ...resale].map((o) => [o.id, o.name]),
   );
 
+  const pageCount = usePageCount("sales", loading ? null : rows.length);
+
   return (
     <>
       <PageHeader
         title={t("sales.title")}
         description={t("sales.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("sales.newTitle")}

@@ -7,6 +7,7 @@ import { PageHeader, Surface } from "../components/ui";
 import { api, money, today } from "../lib/api";
 import { expenseTypeLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Row = {
   id: number;
@@ -40,11 +41,14 @@ export function ExpensesPage() {
     load();
   }, [load]);
 
+  const pageCount = usePageCount("expenses", loading ? null : rows.length);
+
   return (
     <>
       <PageHeader
         title={t("expenses.title")}
         description={t("expenses.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("expenses.newTitle")}

@@ -9,6 +9,7 @@ import { Button, PageHeader, Surface } from "../components/ui";
 import { unitLabel } from "../i18n";
 import { api, formatApiError, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Purchase = {
   id: number;
@@ -80,14 +81,13 @@ export function PurchasesPage() {
 
   const load = useCallback(async () => {
     try {
-      const [p, i, r] = await Promise.all([
-        api<Purchase[]>("/purchases"),
-        api<Opt[]>("/ingredients"),
-        api<Opt[]>("/resale"),
-      ]);
-      setRows(p);
-      setIngs(i);
-      setResale(r);
+      const pP = api<Purchase[]>("/purchases").then((p) => {
+        setRows(p);
+        setLoading(false);
+      });
+      const iP = api<Opt[]>("/ingredients?minimal=1").then(setIngs);
+      const rP = api<Opt[]>("/resale?minimal=1").then(setResale);
+      await Promise.all([pP, iP, rP]);
     } finally {
       setLoading(false);
     }
@@ -200,11 +200,14 @@ export function PurchasesPage() {
   const deleteName =
     names[pendingDelete?.itemId ?? ""] ?? pendingDelete?.itemId ?? "";
 
+  const pageCount = usePageCount("purchases", loading ? null : rows.length);
+
   return (
     <>
       <PageHeader
         title={t("purchases.title")}
         description={t("purchases.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("purchases.newTitle")}

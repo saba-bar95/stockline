@@ -1,46 +1,50 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "../components/DataTable";
 import { ModalForm } from "../components/ModalForm";
+import {
+  RecipeProductModal,
+  type RecipeLineRow,
+} from "../components/RecipeProductModal";
 import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
-import { api, formatApiError, qty } from "../lib/api";
-import { unitLabel } from "../i18n";
+import { api } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
-type Line = {
-  id: number;
-  productId: string;
-  ingredientId: string;
-  qty: number;
-  productName: string;
-  ingredientName: string;
-  unit: string;
-};
 type Opt = { id: string; name: string };
 
+type ProductRecipeRow = {
+  productId: string;
+  productName: string;
+  lineCount: number;
+};
+
 export function RecipesPage() {
-  const { t, locale, numberLocale } = usePrefs();
-  const [lines, setLines] = useState<Line[]>([]);
+  const { t } = usePrefs();
+  const [lines, setLines] = useState<RecipeLineRow[]>([]);
   const [products, setProducts] = useState<Opt[]>([]);
   const [ingredients, setIngredients] = useState<Opt[]>([]);
   const [loading, setLoading] = useState(true);
   const [productId, setProductId] = useState("");
   const [ingredientId, setIngredientId] = useState("");
   const [qtyVal, setQtyVal] = useState("1");
-  const [actionErr, setActionErr] = useState("");
+  const [viewProductId, setViewProductId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [r, p, i] = await Promise.all([
-        api<Line[]>("/recipes"),
-        api<Opt[]>("/products"),
-        api<Opt[]>("/ingredients"),
-      ]);
-      setLines(r);
-      setProducts(p);
-      setIngredients(i);
-      if (!productId && p[0]) setProductId(p[0].id);
-      if (!ingredientId && i[0]) setIngredientId(i[0].id);
+      const rP = api<RecipeLineRow[]>("/recipes").then((r) => {
+        setLines(r);
+        setLoading(false);
+      });
+      const pP = api<Opt[]>("/products?minimal=1").then((p) => {
+        setProducts(p);
+        if (!productId && p[0]) setProductId(p[0].id);
+      });
+      const iP = api<Opt[]>("/ingredients?minimal=1").then((i) => {
+        setIngredients(i);
+        if (!ingredientId && i[0]) setIngredientId(i[0].id);
+      });
+      await Promise.all([rP, pP, iP]);
     } finally {
       setLoading(false);
     }
@@ -51,11 +55,40 @@ export function RecipesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const productRows = useMemo<ProductRecipeRow[]>(() => {
+    const counts = new Map<string, number>();
+    const names = new Map<string, string>();
+    for (const line of lines) {
+      counts.set(line.productId, (counts.get(line.productId) ?? 0) + 1);
+      if (!names.has(line.productId)) {
+        names.set(line.productId, line.productName);
+      }
+    }
+    return [...counts.entries()]
+      .map(([productId, lineCount]) => ({
+        productId,
+        productName:
+          names.get(productId) ??
+          products.find((p) => p.id === productId)?.name ??
+          productId,
+        lineCount,
+      }))
+      .sort((a, b) => a.productName.localeCompare(b.productName, "ka"));
+  }, [lines, products]);
+
+  const viewProductName =
+    productRows.find((p) => p.productId === viewProductId)?.productName ??
+    products.find((p) => p.id === viewProductId)?.name ??
+    "";
+
+  const pageCount = usePageCount("recipes", loading ? null : productRows.length);
+
   return (
     <>
       <PageHeader
         title={t("recipes.title")}
         description={t("recipes.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("recipes.newTitle")}
@@ -110,20 +143,14 @@ export function RecipesPage() {
           </ModalForm>
         }
       />
-      {actionErr ? (
-        <div
-          role="alert"
-          className="mb-4 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger"
-        >
-          {actionErr}
-        </div>
-      ) : null}
       <Surface>
         <DataTable
-          rows={lines}
+          rows={productRows}
           loading={loading}
-          rowKey={(r) => r.id}
+          rowKey={(r) => r.productId}
+          onRowClick={(r) => setViewProductId(r.productId)}
           defaultSortKey="productName"
+          emptyText={t("recipes.empty")}
           columns={[
             {
               key: "productName",
@@ -133,26 +160,13 @@ export function RecipesPage() {
               render: (r) => r.productName,
             },
             {
-              key: "ingredientName",
-              label: t("common.ingredient"),
-              sortValue: (r) => r.ingredientName,
-              filterValue: (r) => r.ingredientName,
-              render: (r) => r.ingredientName,
-            },
-            {
-              key: "qty",
-              label: t("common.qty"),
+              key: "lineCount",
+              label: t("recipes.lines"),
+              title: t("recipes.linesFull"),
               align: "right",
-              sortValue: (r) => r.qty,
-              filterValue: (r) => String(r.qty),
-              render: (r) => qty(r.qty, numberLocale),
-            },
-            {
-              key: "unit",
-              label: t("common.unit"),
-              sortValue: (r) => r.unit,
-              filterValue: (r) => unitLabel(locale, r.unit),
-              render: (r) => unitLabel(locale, r.unit),
+              sortValue: (r) => r.lineCount,
+              filterValue: (r) => String(r.lineCount),
+              render: (r) => r.lineCount,
             },
             {
               key: "actions",
@@ -163,23 +177,25 @@ export function RecipesPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={async () => {
-                    setActionErr("");
-                    try {
-                      await api(`/recipes/${r.id}`, { method: "DELETE" });
-                      await load();
-                    } catch (e) {
-                      setActionErr(formatApiError(e, t));
-                    }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewProductId(r.productId);
                   }}
                 >
-                  {t("common.delete")}
+                  {t("common.details")}
                 </Button>
               ),
             },
           ]}
         />
       </Surface>
+      <RecipeProductModal
+        productId={viewProductId}
+        productName={viewProductName}
+        lines={lines}
+        onClose={() => setViewProductId(null)}
+        onChanged={load}
+      />
     </>
   );
 }

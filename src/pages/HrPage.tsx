@@ -7,6 +7,7 @@ import { PageHeader, Surface } from "../components/ui";
 import { api, money, today } from "../lib/api";
 import { statusLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Emp = { id: string; name: string; dailyRate: number; status: string };
 type Pay = { id: number; date: string; employeeId: string; amount: number };
@@ -43,9 +44,15 @@ export function HrPage() {
 
   const empNames = Object.fromEntries(emps.map((e) => [e.id, e.name]));
 
+  const pageCount = usePageCount("hr", loading ? null : emps.length);
+
   return (
     <>
-      <PageHeader title={t("hr.title")} description={t("hr.description")} />
+      <PageHeader
+        title={t("hr.title")}
+        description={t("hr.description")}
+        count={pageCount}
+      />
       <div className="space-y-6">
         <Surface title={t("hr.employees")}>
           <div className="mb-4">

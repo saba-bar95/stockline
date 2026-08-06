@@ -8,16 +8,18 @@ import { Button, PageHeader, Surface } from "../components/ui";
 import { api, money, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Row = {
   id: string;
   name: string;
   unit: string;
   category: string;
-  avgCost: number;
-  stock: number;
+  avgCost: number | null;
+  stock: number | null;
   lastPurchaseDate: string | null;
   canDelete?: boolean;
+  metricsPending?: boolean;
 };
 
 export function IngredientsPage() {
@@ -31,9 +33,22 @@ export function IngredientsPage() {
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
-
+  const pageCount = usePageCount("ingredients", loading ? null : rows.length);
   const load = useCallback(async () => {
     try {
+      const bare = await api<
+        Array<Pick<Row, "id" | "name" | "unit" | "category">>
+      >("/ingredients?minimal=1");
+      setRows(
+        bare.map((r) => ({
+          ...r,
+          avgCost: null,
+          stock: null,
+          lastPurchaseDate: null,
+          metricsPending: true,
+        })),
+      );
+      setLoading(false);
       setRows(await api<Row[]>("/ingredients"));
     } finally {
       setLoading(false);
@@ -74,6 +89,7 @@ export function IngredientsPage() {
       <PageHeader
         title={t("ingredients.title")}
         description={t("ingredients.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("ingredients.newTitle")}
@@ -172,22 +188,29 @@ export function IngredientsPage() {
               title: t("ingredients.lastPurchaseFull"),
               filterable: false,
               sortValue: (r) => r.lastPurchaseDate ?? "",
-              render: (r) => r.lastPurchaseDate ?? "—",
+              render: (r) =>
+                r.metricsPending ? "…" : (r.lastPurchaseDate ?? "—"),
             },
             {
               key: "avgCost",
               label: t("ingredients.avgPrice"),
               title: t("ingredients.avgPriceFull"),
               filterable: false,
-              sortValue: (r) => r.avgCost,
-              render: (r) => money(r.avgCost, numberLocale),
+              sortValue: (r) => r.avgCost ?? -1,
+              render: (r) =>
+                r.metricsPending || r.avgCost == null
+                  ? "…"
+                  : money(r.avgCost, numberLocale),
             },
             {
               key: "stock",
               label: t("common.stock"),
               filterable: false,
-              sortValue: (r) => r.stock,
-              render: (r) => qty(r.stock, numberLocale, qtyDecimals),
+              sortValue: (r) => r.stock ?? -1,
+              render: (r) =>
+                r.metricsPending || r.stock == null
+                  ? "…"
+                  : qty(r.stock, numberLocale, qtyDecimals),
             },
             {
               key: "actions",
@@ -195,7 +218,9 @@ export function IngredientsPage() {
               sortable: false,
               filterable: false,
               render: (r) =>
-                r.canDelete ? (
+                r.metricsPending ? (
+                  <span className="text-xs text-ink-muted">…</span>
+                ) : r.canDelete ? (
                   <Button
                     variant="ghost"
                     size="sm"

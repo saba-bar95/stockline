@@ -3,12 +3,25 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AuthUserButton } from "../lib/auth";
 import { localePath, NAV, stripLocale } from "../lib/api";
 import { cn } from "../lib/cn";
+import {
+  CountsProvider,
+  useCounts,
+} from "../preferences/CountsContext";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { SettingsPanel } from "./SettingsPanel";
 
 export function Layout() {
+  return (
+    <CountsProvider>
+      <LayoutShell />
+    </CountsProvider>
+  );
+}
+
+function LayoutShell() {
   const { t, locale } = usePrefs();
   const location = useLocation();
+  const { counts, countsReady } = useCounts();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -78,24 +91,50 @@ export function Layout() {
           </div>
 
           <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-ms-overflow-style:none] scrollbar-thin">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={localePath(locale, item.to)}
-                end={item.to === "/"}
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "nav-item cursor-pointer whitespace-nowrap rounded-lg px-3 py-2.5 text-[0.95rem] font-medium",
-                    isActive
-                      ? "bg-sidebar-active text-white shadow-sm"
-                      : "text-white/70 hover:bg-sidebar-hover hover:text-white",
-                  )
-                }
-              >
-                {t(item.labelKey)}
-              </NavLink>
-            ))}
+            {NAV.map((item) => {
+              const n =
+                item.countKey != null && countsReady
+                  ? counts[item.countKey]
+                  : undefined;
+              const stagger =
+                item.countKey == null
+                  ? 0
+                  : NAV.filter((x) => x.countKey).findIndex(
+                      (x) => x.to === item.to,
+                    );
+              return (
+                <NavLink
+                  key={item.to}
+                  to={localePath(locale, item.to)}
+                  end={item.to === "/"}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      "nav-item flex cursor-pointer items-center justify-between gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-[0.95rem] font-medium",
+                      isActive
+                        ? "bg-sidebar-active text-white shadow-sm"
+                        : "text-white/70 hover:bg-sidebar-hover hover:text-white",
+                    )
+                  }
+                >
+                  <span className="min-w-0 truncate">{t(item.labelKey)}</span>
+                  {n != null ? (
+                    <span
+                      className={cn(
+                        "nav-count-badge inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1.5",
+                        "text-[0.7rem] font-semibold tabular-nums",
+                        "bg-white/12 text-white/85 ring-1 ring-white/15",
+                      )}
+                      style={{
+                        animationDelay: `${Math.max(0, stagger) * 55}ms`,
+                      }}
+                    >
+                      {n.toLocaleString()}
+                    </span>
+                  ) : null}
+                </NavLink>
+              );
+            })}
           </nav>
 
           <div className="mt-3 shrink-0 space-y-1 border-t border-white/10 pt-3">

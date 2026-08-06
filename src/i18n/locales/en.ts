@@ -82,6 +82,7 @@ export const en: Messages = {
     loading: "Loading…",
     delete: "Delete",
     deleting: "Deleting…",
+    details: "Details",
     search: "Search",
     searchPlaceholder: "Filter all columns…",
     perPage: "Per page",
@@ -223,6 +224,7 @@ export const en: Messages = {
     empty: "No movements",
     typeTitle: "Purchase / production / write-off",
     typeTitleResale: "Purchase / sale / write-off",
+    typeTitleProduct: "Production / sale / write-off",
     unitPrice: "Unit price",
   },
   movement: {
@@ -248,8 +250,9 @@ export const en: Messages = {
   products: {
     title: "Products",
     description:
-      "Made-in-house items — unit cost follows the Excel logic (ingredients + overhead).",
+      "Made-in-house items — click a row for movement history (production, sale, write-off).",
     newTitle: "New product",
+    qtyIn: "Produced",
     ingPerUnit: "Ing./unit",
     ingPerUnitFull: "Ingredient cost per unit",
     ohTotal: "OH total",
@@ -263,10 +266,19 @@ export const en: Messages = {
   },
   recipes: {
     title: "Recipes",
-    description: "How much of each ingredient one unit of product needs.",
+    description:
+      "Products that have a recipe — open Details to see ingredients for 1 unit.",
     newTitle: "Recipe line",
+    titleNamed: "{name} — recipe",
+    perUnitHint: "Quantities per 1 unit of product",
+    lines: "Ingredients",
+    linesFull: "Number of ingredients in the recipe",
+    empty: "No recipes yet — add a recipe line to a product",
+    emptyProduct: "No ingredients yet — use Add to build this recipe",
     deleteBlocked:
-      "Cannot delete — this product already has production runs. Change would break cost history.",
+      "Cannot delete — this ingredient was already used when this product was produced.",
+    deleteHint:
+      "Lines added after production can be removed; ingredients already used in a run stay locked.",
   },
   purchases: {
     title: "Purchases",

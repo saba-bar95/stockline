@@ -6,6 +6,7 @@ import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Row = {
   id: number;
@@ -32,16 +33,14 @@ export function WriteOffsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [w, i, p, r] = await Promise.all([
-        api<Row[]>("/write-offs"),
-        api<Opt[]>("/ingredients"),
-        api<Opt[]>("/products"),
-        api<Opt[]>("/resale"),
-      ]);
-      setRows(w);
-      setIngs(i);
-      setProds(p);
-      setResale(r);
+      const wP = api<Row[]>("/write-offs").then((w) => {
+        setRows(w);
+        setLoading(false);
+      });
+      const iP = api<Opt[]>("/ingredients?minimal=1").then(setIngs);
+      const pP = api<Opt[]>("/products?minimal=1").then(setProds);
+      const rP = api<Opt[]>("/resale?minimal=1").then(setResale);
+      await Promise.all([wP, iP, pP, rP]);
     } finally {
       setLoading(false);
     }
@@ -61,11 +60,14 @@ export function WriteOffsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, ings, prods, resale]);
 
+  const pageCount = usePageCount("writeOffs", loading ? null : rows.length);
+
   return (
     <>
       <PageHeader
         title={t("writeOffs.title")}
         description={t("writeOffs.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("writeOffs.newTitle")}

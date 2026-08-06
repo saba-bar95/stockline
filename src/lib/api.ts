@@ -163,20 +163,38 @@ export function setQtyDecimalsLive(n: number) {
   qtyDecimalsLive = Math.min(6, Math.max(0, Math.round(n)));
 }
 
-export type NavItem = { to: string; labelKey: MessageKey };
+export type NavItem = {
+  to: string;
+  labelKey: MessageKey;
+  /** Key in GET /counts — omit for P&L. */
+  countKey?: keyof NavCounts;
+};
+
+export type NavCounts = {
+  ingredients: number;
+  resale: number;
+  products: number;
+  recipes: number;
+  purchases: number;
+  production: number;
+  sales: number;
+  writeOffs: number;
+  hr: number;
+  expenses: number;
+};
 
 export const NAV: NavItem[] = [
   { to: "/", labelKey: "nav.pl" },
-  { to: "/ingredients", labelKey: "nav.ingredients" },
-  { to: "/resale", labelKey: "nav.resale" },
-  { to: "/products", labelKey: "nav.products" },
-  { to: "/recipes", labelKey: "nav.recipes" },
-  { to: "/purchases", labelKey: "nav.purchases" },
-  { to: "/production", labelKey: "nav.production" },
-  { to: "/sales", labelKey: "nav.sales" },
-  { to: "/write-offs", labelKey: "nav.writeOffs" },
-  { to: "/hr", labelKey: "nav.hr" },
-  { to: "/expenses", labelKey: "nav.expenses" },
+  { to: "/ingredients", labelKey: "nav.ingredients", countKey: "ingredients" },
+  { to: "/resale", labelKey: "nav.resale", countKey: "resale" },
+  { to: "/products", labelKey: "nav.products", countKey: "products" },
+  { to: "/recipes", labelKey: "nav.recipes", countKey: "recipes" },
+  { to: "/purchases", labelKey: "nav.purchases", countKey: "purchases" },
+  { to: "/production", labelKey: "nav.production", countKey: "production" },
+  { to: "/sales", labelKey: "nav.sales", countKey: "sales" },
+  { to: "/write-offs", labelKey: "nav.writeOffs", countKey: "writeOffs" },
+  { to: "/hr", labelKey: "nav.hr", countKey: "hr" },
+  { to: "/expenses", labelKey: "nav.expenses", countKey: "expenses" },
 ];
 
 /** Build a locale-prefixed path: `/ka`, `/en/ingredients`, … */

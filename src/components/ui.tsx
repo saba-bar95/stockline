@@ -5,11 +5,14 @@ export function PageHeader({
   title,
   description,
   actions,
+  count,
   className,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** Total records for this page — shown in a pill next to the title. */
+  count?: number;
   className?: string;
 }) {
   return (
@@ -36,9 +39,23 @@ export function PageHeader({
                 "accent-draw 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both",
             }}
           />
-          <h1 className="font-display text-[2.05rem] leading-[1.05] font-semibold tracking-tight text-gradient-heading sm:text-[2.35rem]">
-            {title}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-display text-[2.05rem] leading-[1.05] font-semibold tracking-tight text-gradient-heading sm:text-[2.35rem]">
+              {title}
+            </h1>
+            {count != null ? (
+              <span
+                className={cn(
+                  "inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full px-2.5",
+                  "bg-teal-soft/90 text-sm font-semibold tabular-nums text-teal-deep",
+                  "ring-1 ring-teal/20 shadow-sm",
+                )}
+                title={String(count)}
+              >
+                {count.toLocaleString()}
+              </span>
+            ) : null}
+          </div>
           {description ? (
             <p className="max-w-2xl text-[0.95rem] leading-relaxed text-ink-soft/90">
               {description}

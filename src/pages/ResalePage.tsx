@@ -8,17 +8,19 @@ import { Button, PageHeader, Surface } from "../components/ui";
 import { api, money, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Row = {
   id: string;
   name: string;
   unit: string;
   category: string;
-  unitCost: number;
-  stock: number;
-  stockValue: number;
+  unitCost: number | null;
+  stock: number | null;
+  stockValue: number | null;
   lastPurchaseDate?: string | null;
   canDelete?: boolean;
+  metricsPending?: boolean;
 };
 
 export function ResalePage() {
@@ -35,6 +37,20 @@ export function ResalePage() {
 
   const load = useCallback(async () => {
     try {
+      const bare = await api<
+        Array<Pick<Row, "id" | "name" | "unit" | "category">>
+      >("/resale?minimal=1");
+      setRows(
+        bare.map((r) => ({
+          ...r,
+          unitCost: null,
+          stock: null,
+          stockValue: null,
+          lastPurchaseDate: null,
+          metricsPending: true,
+        })),
+      );
+      setLoading(false);
       setRows(await api<Row[]>("/resale"));
     } finally {
       setLoading(false);
@@ -69,11 +85,14 @@ export function ResalePage() {
     }
   }
 
+  const pageCount = usePageCount("resale", loading ? null : rows.length);
+
   return (
     <>
       <PageHeader
         title={t("resale.title")}
         description={t("resale.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("resale.newTitle")}
@@ -165,26 +184,35 @@ export function ResalePage() {
               label: t("resale.unitCost"),
               title: t("resale.unitCostFull"),
               align: "right",
-              sortValue: (r) => r.unitCost,
-              filterValue: (r) => String(r.unitCost),
-              render: (r) => money(r.unitCost, numberLocale),
+              sortValue: (r) => r.unitCost ?? -1,
+              filterValue: (r) => String(r.unitCost ?? ""),
+              render: (r) =>
+                r.metricsPending || r.unitCost == null
+                  ? "…"
+                  : money(r.unitCost, numberLocale),
             },
             {
               key: "stock",
               label: t("common.stock"),
               align: "right",
-              sortValue: (r) => r.stock,
-              filterValue: (r) => String(r.stock),
-              render: (r) => qty(r.stock, numberLocale),
+              sortValue: (r) => r.stock ?? -1,
+              filterValue: (r) => String(r.stock ?? ""),
+              render: (r) =>
+                r.metricsPending || r.stock == null
+                  ? "…"
+                  : qty(r.stock, numberLocale),
             },
             {
               key: "stockValue",
               label: t("resale.stockValue"),
               title: t("resale.stockValueFull"),
               align: "right",
-              sortValue: (r) => r.stockValue,
-              filterValue: (r) => String(r.stockValue),
-              render: (r) => money(r.stockValue, numberLocale),
+              sortValue: (r) => r.stockValue ?? -1,
+              filterValue: (r) => String(r.stockValue ?? ""),
+              render: (r) =>
+                r.metricsPending || r.stockValue == null
+                  ? "…"
+                  : money(r.stockValue, numberLocale),
             },
             {
               key: "actions",
@@ -192,7 +220,9 @@ export function ResalePage() {
               sortable: false,
               filterable: false,
               render: (r) =>
-                r.canDelete ? (
+                r.metricsPending ? (
+                  <span className="text-xs text-ink-muted">…</span>
+                ) : r.canDelete ? (
                   <Button
                     variant="ghost"
                     size="sm"

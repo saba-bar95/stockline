@@ -6,6 +6,7 @@ import { SelectField } from "../components/SelectField";
 import { PageHeader, Surface } from "../components/ui";
 import { api, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { usePageCount } from "../preferences/CountsContext";
 
 type Run = {
   id: number;
@@ -31,13 +32,15 @@ export function ProductionPage() {
 
   const load = useCallback(async () => {
     try {
-      const [r, p] = await Promise.all([
-        api<Run[]>("/production"),
-        api<Opt[]>("/products"),
-      ]);
-      setRows(r);
-      setProducts(p);
-      if (!productId && p[0]) setProductId(p[0].id);
+      const rP = api<Run[]>("/production").then((r) => {
+        setRows(r);
+        setLoading(false);
+      });
+      const pP = api<Opt[]>("/products?minimal=1").then((p) => {
+        setProducts(p);
+        if (!productId && p[0]) setProductId(p[0].id);
+      });
+      await Promise.all([rP, pP]);
     } finally {
       setLoading(false);
     }
@@ -48,11 +51,14 @@ export function ProductionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const pageCount = usePageCount("production", loading ? null : rows.length);
+
   return (
     <>
       <PageHeader
         title={t("production.title")}
         description={t("production.description")}
+        count={pageCount}
         actions={
           <ModalForm
             title={t("production.newTitle")}

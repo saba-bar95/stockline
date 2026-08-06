@@ -343,6 +343,10 @@ html[data-font-size="lg"] {
       box-shadow 0.2s ease;
   }
 
+  .nav-count-badge {
+    animation: nav-count-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .btn-press {
     transition:
       transform 0.15s ease,
@@ -370,6 +374,17 @@ html[data-font-size="lg"] {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes nav-count-in {
+  from {
+    opacity: 0;
+    transform: scale(0.45) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
