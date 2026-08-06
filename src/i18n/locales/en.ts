@@ -12,7 +12,7 @@ export const en: Messages = {
     headlineTail: "BUSINESS",
     subline: "",
     blurb:
-      "Materials, compositions, production, sales, payroll, expenses, and P&L — unit costs that stay consistent for managers, accountants, and directors.",
+      "Clear unit costs and P&L — so makers can trust the numbers and decide with confidence.",
     noAccount: "Don't have an account?",
     hasAccount: "Already have an account?",
     signUp: "Sign Up",

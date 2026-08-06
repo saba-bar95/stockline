@@ -250,6 +250,7 @@ function AuthShell({
           headlineTail={t("auth.headlineTail")}
           mode={mode}
           blurb={t("auth.blurb")}
+          tagline={t("brand.tagline")}
         />
 
         <div className="auth-card-enter w-full min-w-0">{children}</div>
