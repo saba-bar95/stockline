@@ -1101,6 +1101,141 @@ html[data-font-size="lg"] {
   animation-delay: -5s;
 }
 
+.auth-abstract-drift {
+  animation: auth-mesh-drift 28s ease-in-out infinite;
+  transform-origin: 1100px 560px;
+}
+
+.auth-grid-drift {
+  animation: auth-grid-shift 40s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+.auth-flow-dash {
+  stroke-dasharray: 10 22;
+  fill: none;
+}
+
+.auth-flow-dash-a {
+  animation: auth-dash-move 16s linear infinite;
+  opacity: 0.55;
+}
+
+.auth-flow-dash-b {
+  animation: auth-dash-move 22s linear infinite reverse;
+  opacity: 0.4;
+}
+
+.auth-flow-dash-c {
+  animation: auth-dash-move 19s linear infinite;
+  animation-delay: -6s;
+  opacity: 0.35;
+}
+
+.auth-flow-pulse {
+  animation: auth-flow-glow 5s ease-in-out infinite;
+}
+
+.auth-layer {
+  opacity: 0.45;
+}
+
+.auth-layer-1 {
+  animation: auth-layer-bob 7s ease-in-out infinite;
+  opacity: 0.35;
+}
+
+.auth-layer-2 {
+  animation: auth-layer-bob 7s ease-in-out infinite;
+  animation-delay: -1.2s;
+  opacity: 0.55;
+}
+
+.auth-layer-3 {
+  animation: auth-layer-bob 7s ease-in-out infinite;
+  animation-delay: -2.4s;
+  opacity: 0.75;
+}
+
+.auth-layer-4 {
+  animation: auth-layer-bob 7s ease-in-out infinite;
+  animation-delay: -3.6s;
+  opacity: 0.9;
+}
+
+.auth-float-block {
+  opacity: 0.4;
+}
+
+.auth-float-block-a {
+  animation: auth-block-float 9s ease-in-out infinite;
+}
+
+.auth-float-block-b {
+  animation: auth-block-float 11s ease-in-out infinite reverse;
+  animation-delay: -3s;
+}
+
+.auth-float-block-c {
+  animation: auth-block-float 10s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.auth-node-ring {
+  opacity: 0.45;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: auth-ring-pulse 3.6s ease-out infinite;
+}
+
+.auth-node-ring-delay {
+  animation-delay: 1.8s;
+}
+
+.auth-node-0 {
+  animation: auth-node-bob 8s ease-in-out infinite;
+}
+.auth-node-1 {
+  animation: auth-node-bob 9s ease-in-out infinite;
+  animation-delay: -1s;
+}
+.auth-node-2 {
+  animation: auth-node-bob 8.5s ease-in-out infinite;
+  animation-delay: -2s;
+}
+.auth-node-3 {
+  animation: auth-node-bob 9.5s ease-in-out infinite;
+  animation-delay: -3s;
+}
+.auth-node-4 {
+  animation: auth-node-bob 8s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-grid-drift,
+  .auth-flow-dash-a,
+  .auth-flow-dash-b,
+  .auth-flow-dash-c,
+  .auth-flow-pulse,
+  .auth-layer-1,
+  .auth-layer-2,
+  .auth-layer-3,
+  .auth-layer-4,
+  .auth-float-block-a,
+  .auth-float-block-b,
+  .auth-float-block-c,
+  .auth-node-ring,
+  .auth-node-0,
+  .auth-node-1,
+  .auth-node-2,
+  .auth-node-3,
+  .auth-node-4,
+  .auth-abstract-drift {
+    animation: none !important;
+  }
+}
+
 .auth-steam {
   border-radius: 50%;
   background: radial-gradient(
@@ -1227,6 +1362,78 @@ html[data-font-size="lg"] {
   }
   50% {
     transform: translate(30px, -20px) scale(1.08);
+  }
+}
+
+@keyframes auth-dash-move {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+
+@keyframes auth-flow-glow {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes auth-grid-shift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-18px, 12px);
+  }
+}
+
+@keyframes auth-layer-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes auth-block-float {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.28;
+  }
+  50% {
+    transform: translate(10px, -14px);
+    opacity: 0.55;
+  }
+}
+
+@keyframes auth-ring-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+@keyframes auth-node-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
   }
 }
 
