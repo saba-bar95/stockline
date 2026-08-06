@@ -1,6 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
   <rect width="48" height="48" rx="12" fill="#10221e"/>
-  <path d="M12 34V14h4.2l5.8 12.6L27.8 14H32v20h-3.6V21.2L23.2 34h-3.4l-5.2-12.8V34H12z" fill="#2dd4bf"/>
-  <path d="M34 34V14h3.6v20H34z" fill="#2dd4bf"/>
-  <rect x="12" y="37" width="24" height="2.5" rx="1.25" fill="#14b8a6"/>
+  <!-- finished product -->
+  <rect x="14" y="10" width="20" height="14" rx="2.5" fill="#2dd4bf"/>
+  <rect x="18" y="14" width="12" height="2.5" rx="1.25" fill="#10221e" opacity="0.35"/>
+  <!-- materials that compose it -->
+  <rect x="11" y="28" width="7" height="7" rx="1.5" fill="#2dd4bf" opacity="0.55"/>
+  <rect x="20.5" y="28" width="7" height="7" rx="1.5" fill="#2dd4bf" opacity="0.75"/>
+  <rect x="30" y="28" width="7" height="7" rx="1.5" fill="#2dd4bf" opacity="0.55"/>
+  <!-- join stems -->
+  <rect x="13.5" y="24" width="2" height="4" rx="1" fill="#14b8a6" opacity="0.7"/>
+  <rect x="23" y="24" width="2" height="4" rx="1" fill="#14b8a6"/>
+  <rect x="32.5" y="24" width="2" height="4" rx="1" fill="#14b8a6" opacity="0.7"/>
+  <!-- baseline -->
+  <rect x="10" y="38" width="28" height="3" rx="1.5" fill="#14b8a6"/>
 </svg>
