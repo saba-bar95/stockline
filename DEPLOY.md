@@ -5,7 +5,7 @@
 
 პროდუქტი: **Stockline** — მასალები, შემადგენლობა, წარმოება, გაყიდვები, ხელფასები, ხარჯები და მოგება-ზარალი.
 განსაზღვრული დომენები (შემდეგ): `stockline.app`, `stockline.io`, `getstockline.com`.
-მიმდინარე ჰოსტები ჯერ რჩება `mise-*` URL-ებით — გადარქმევა ხელით.
+GitHub repo უკვე `saba-bar95/stockline`. Vercel / Railway ჰოსტები ჯერ `mise-*` URL-ებითაა — გადარქმევა ხელით (ქვემოთ).
 
 ---
 
@@ -34,7 +34,7 @@ Clerk ამოწმებს მომხმარებელს ბრაუ
 | [Vercel](https://vercel.com) | Frontend | კი |
 | [Clerk](https://dashboard.clerk.com) | Auth (უკვე გაქვს) | კი |
 
-GitHub repo: `saba-bar95/mza-app` (private OK).
+GitHub repo: `saba-bar95/stockline` (private OK).
 
 ---
 
@@ -46,7 +46,7 @@ GitHub repo: `saba-bar95/mza-app` (private OK).
 3. ლოკალურად schema ატვირთე (ერთხელ):
 
 ```bash
-cd ~/Desktop/mza-app
+cd ~/Desktop/mza-app   # ან stockline — ლოკალური ფოლდერის სახელი
 # .env-ში დროებით ჩაწერე Neon URL (ან მხოლოდ ამ ბრძანებისთვის):
 DATABASE_URL="postgresql://USER:PASS@HOST/neondb?sslmode=require" npm run db:push:neon
 ```
@@ -59,7 +59,7 @@ DATABASE_URL="postgresql://USER:PASS@HOST/neondb?sslmode=require" npm run db:pus
 
 ## ნაბიჯი 2 — Railway (API)
 
-1. https://railway.app → **New Project** → **Deploy from GitHub** → აირჩიე `mza-app`.
+1. https://railway.app → **New Project** → **Deploy from GitHub** → აირჩიე `stockline`.
 2. Settings / Variables — დაამატე:
 
 ```
@@ -89,7 +89,7 @@ npx tsx server/run.ts
 
 ## ნაბიჯი 3 — Vercel (UI)
 
-1. https://vercel.com → **Add New Project** → იმპორტი `mza-app`.
+1. https://vercel.com → **Add New Project** → იმპორტი `stockline`.
 2. Framework: Other / Vite. Build: `npm run build`, Output: `dist`.
 3. Environment Variables:
 

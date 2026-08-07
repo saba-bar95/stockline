@@ -6,7 +6,7 @@ Built for **operations managers, accountants, directors, and owners** who need m
 
 Each signed-in organization only sees its own data (`organizationId` scoping). Auth via Clerk; Neon Postgres in production.
 
-**Live:** [mise-app-hazel.vercel.app](https://mise-app-hazel.vercel.app) (hosting URLs unchanged for now)
+**Live:** [mise-app-hazel.vercel.app](https://mise-app-hazel.vercel.app) (rename Vercel project to update this URL)
 
 **Intended domains** (buy / wire later): `stockline.app`, `stockline.io`, `getstockline.com`
 
