@@ -6,7 +6,7 @@ $excel = New-Object -ComObject Excel.Application
 $excel.Visible = $false
 $excel.DisplayAlerts = $false
 $wb = $excel.Workbooks.Open('C:\Users\user\Desktop\mza (1).xlsm')
-$out = 'C:\Users\user\Desktop\mza-app\scripts\excel_preview.json'
+$out = Join-Path $PSScriptRoot 'excel_preview.json'
 $map = @{}
 foreach ($s in @($wb.Sheets)) { $map[$s.CodeName] = $s }
 

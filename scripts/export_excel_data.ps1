@@ -4,7 +4,7 @@ Get-Process excel -EA SilentlyContinue | Stop-Process -Force
 Start-Sleep 1
 
 $src = 'C:\Users\user\Desktop\mza (1).xlsm'
-$outDir = 'C:\Users\user\Desktop\mza-app\scripts\export'
+$outDir = Join-Path $PSScriptRoot 'export'
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 $excel = New-Object -ComObject Excel.Application

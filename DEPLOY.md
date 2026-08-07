@@ -47,7 +47,7 @@ GitHub repo: `saba-bar95/stockline` (private OK).
 3. ლოკალურად schema ატვირთე (ერთხელ):
 
 ```bash
-cd ~/Desktop/mza-app   # ან stockline — ლოკალური ფოლდერის სახელი
+cd ~/Desktop/stockline
 # .env-ში დროებით ჩაწერე Neon URL (ან მხოლოდ ამ ბრძანებისთვის):
 DATABASE_URL="postgresql://USER:PASS@HOST/neondb?sslmode=require" npm run db:push:neon
 ```
