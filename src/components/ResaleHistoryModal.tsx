@@ -121,6 +121,7 @@ export function ResaleHistoryModal({ resaleId, onClose }: Props) {
             defaultSortKey="date"
             defaultSortDir="desc"
             emptyText={t("history.empty")}
+            scrollOnPageChange={false}
             columns={[
               {
                 key: "date",

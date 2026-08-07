@@ -2,10 +2,22 @@ import type { MessageKey } from "../i18n";
 import type { Locale } from "../i18n";
 
 let getTokenFn: (() => Promise<string | null>) | null = null;
+let busyDeltaFn: ((delta: number) => void) | null = null;
 
 /** Wired from AuthProvider so api() can attach Clerk JWT. */
 export function setApiTokenGetter(fn: () => Promise<string | null>) {
   getTokenFn = fn;
+}
+
+/** Wired from BusyOverlayProvider — tracks in-flight mutations. */
+export function setApiBusyListener(fn: ((delta: number) => void) | null) {
+  busyDeltaFn = fn;
+}
+
+function trackMutationBusy(method: string | undefined, delta: number) {
+  const m = (method ?? "GET").toUpperCase();
+  if (m === "GET" || m === "HEAD" || m === "OPTIONS") return;
+  busyDeltaFn?.(delta);
 }
 
 function sleep(ms: number) {
@@ -77,6 +89,9 @@ export function formatApiError(
     if (e.code === "recipe_in_use") {
       return t("recipes.deleteBlocked");
     }
+    if (e.code === "recipe_duplicate") {
+      return t("recipes.duplicateBlocked");
+    }
   }
   return e instanceof Error ? e.message : t("common.error");
 }
@@ -89,24 +104,29 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getTokenFn ? await getTokenFn() : null;
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await apiFetch(path, {
-    ...init,
-    headers,
-  });
-  const data = (await res.json().catch(() => ({}))) as {
-    error?: string;
-    code?: string;
-    conflictDate?: string;
-    conflictKind?: string;
-  };
-  if (!res.ok) {
-    throw new ApiError(data.error || res.statusText, {
-      code: data.code ?? data.error,
-      conflictDate: data.conflictDate,
-      conflictKind: data.conflictKind,
+  trackMutationBusy(init?.method, 1);
+  try {
+    const res = await apiFetch(path, {
+      ...init,
+      headers,
     });
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      code?: string;
+      conflictDate?: string;
+      conflictKind?: string;
+    };
+    if (!res.ok) {
+      throw new ApiError(data.error || res.statusText, {
+        code: data.code ?? data.error,
+        conflictDate: data.conflictDate,
+        conflictKind: data.conflictKind,
+      });
+    }
+    return data as T;
+  } finally {
+    trackMutationBusy(init?.method, -1);
   }
-  return data as T;
 }
 
 /** Authenticated binary download (CSV / Excel). */

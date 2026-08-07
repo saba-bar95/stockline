@@ -11,7 +11,7 @@ import { api } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { usePageCount } from "../preferences/CountsContext";
 
-type Opt = { id: string; name: string };
+type Opt = { id: string; name: string; unit?: string };
 
 type ProductRecipeRow = {
   productId: string;
@@ -79,6 +79,11 @@ export function RecipesPage() {
   const viewProductName =
     productRows.find((p) => p.productId === viewProductId)?.productName ??
     products.find((p) => p.id === viewProductId)?.name ??
+    "";
+
+  const viewProductUnit =
+    lines.find((l) => l.productId === viewProductId)?.productUnit ??
+    products.find((p) => p.id === viewProductId)?.unit ??
     "";
 
   const pageCount = usePageCount("recipes", loading ? null : productRows.length);
@@ -192,6 +197,7 @@ export function RecipesPage() {
       <RecipeProductModal
         productId={viewProductId}
         productName={viewProductName}
+        productUnit={viewProductUnit}
         lines={lines}
         onClose={() => setViewProductId(null)}
         onChanged={load}

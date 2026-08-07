@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, money, qty } from "../lib/api";
-import { movementLabel } from "../i18n";
+import { movementLabel, unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { DataTable } from "./DataTable";
 import { Modal } from "./Modal";
@@ -78,7 +78,9 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
               <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
                 {t("history.unit")}
               </div>
-              <strong className="text-ink">{ing.unit}</strong>
+              <strong className="text-ink">
+                {unitLabel(locale, ing.unit)}
+              </strong>
             </div>
             <div className="min-w-0 space-y-1">
               <div className="text-[0.7rem] font-semibold tracking-wide text-ink-muted uppercase">
@@ -117,6 +119,7 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
             defaultSortKey="date"
             defaultSortDir="desc"
             emptyText={t("history.empty")}
+            scrollOnPageChange={false}
             columns={[
               {
                 key: "date",

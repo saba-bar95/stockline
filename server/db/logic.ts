@@ -32,6 +32,13 @@ export function localDateYmd(d: Date) {
 export function todayLocal() {
   return localDateYmd(new Date());
 }
+
+/** Round qty for error messages (avoids float noise like 0.544999…). */
+export function formatQty(n: number, decimals = 2): string {
+  if (!Number.isFinite(n)) return String(n);
+  return String(Number(n.toFixed(decimals)));
+}
+
 /** Excel wsIng col G: SUM(purchase totals) / SUM(qty) for Ingredient. */
 export async function avgIngredientCost(
   orgId: string,
@@ -394,6 +401,773 @@ export async function validateProposedManufacturedOut(
   const ins = await manufacturedProductIns(orgId, productId);
   const outs = [...(await manufacturedProductOuts(orgId, productId)), out];
   return findPurchaseTimelineConflict(ins, outs);
+}
+
+async function manufacturedProductOutsExcludingSale(
+  orgId: string,
+  productId: string,
+  excludeSaleId: number,
+) {
+  const sold = await qAll(
+    db
+      .select({ id: sales.id, date: sales.date, qty: sales.qty })
+      .from(sales)
+      .where(
+        and(
+          orgEq(sales.organizationId, orgId),
+          eq(sales.source, "manufactured"),
+          eq(sales.itemId, productId),
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({ date: writeOffs.date, qty: writeOffs.qty })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Product"),
+          eq(writeOffs.itemId, productId),
+        ),
+      ),
+  );
+  return [
+    ...sold
+      .filter((r) => r.id !== excludeSaleId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "sale" as const,
+      })),
+    ...written.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "writeOff" as const,
+    })),
+  ];
+}
+
+async function resaleConsumptionEventsExcludingSale(
+  orgId: string,
+  productId: string,
+  excludeSaleId: number,
+): Promise<
+  Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>
+> {
+  const sold = await qAll(
+    db
+      .select({ id: sales.id, date: sales.date, qty: sales.qty })
+      .from(sales)
+      .where(
+        and(
+          orgEq(sales.organizationId, orgId),
+          eq(sales.source, "resale"),
+          eq(sales.itemId, productId),
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({ date: writeOffs.date, qty: writeOffs.qty })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Product"),
+          eq(writeOffs.itemId, productId),
+        ),
+      ),
+  );
+  return [
+    ...sold
+      .filter((r) => r.id !== excludeSaleId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "sale" as const,
+      })),
+    ...written.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "writeOff" as const,
+    })),
+  ];
+}
+
+/** Validate replacing a sale (exclude old row, apply new fields). */
+export async function validateSaleUpdate(
+  orgId: string,
+  saleId: number,
+  next: {
+    date: string;
+    source: "manufactured" | "resale";
+    itemId: string;
+    qty: number;
+  },
+): Promise<
+  | { ok: true }
+  | {
+      ok: false;
+      conflict?: PurchaseTimelineConflict;
+      stockError?: string;
+    }
+> {
+  const existing = await qGet(
+    db
+      .select()
+      .from(sales)
+      .where(and(orgEq(sales.organizationId, orgId), eq(sales.id, saleId))),
+  );
+  if (!existing) {
+    return { ok: false, stockError: "არ მოიძებნა" };
+  }
+
+  const sameItem =
+    existing.source === next.source && existing.itemId === next.itemId;
+
+  const stock =
+    next.source === "manufactured"
+      ? await productStock(orgId, next.itemId)
+      : await resaleStock(orgId, next.itemId);
+  const available = sameItem ? stock + Number(existing.qty) : stock;
+  if (available + 1e-9 < next.qty) {
+    return {
+      ok: false,
+      stockError: `არასაკმარისი ნაშთი (არის ${formatQty(available)})`,
+    };
+  }
+
+  if (sameItem) {
+    if (next.source === "manufactured") {
+      const ins = await manufacturedProductIns(orgId, next.itemId);
+      const outs = [
+        ...(await manufacturedProductOutsExcludingSale(
+          orgId,
+          next.itemId,
+          saleId,
+        )),
+        {
+          date: next.date,
+          qty: next.qty,
+          conflictKind: "sale" as const,
+        },
+      ];
+      const conflict = findPurchaseTimelineConflict(ins, outs);
+      if (conflict) return { ok: false, conflict };
+    } else {
+      const purchasesRows = await purchaseRowsForItem(
+        orgId,
+        "Product",
+        next.itemId,
+      );
+      const outs = [
+        ...(await resaleConsumptionEventsExcludingSale(
+          orgId,
+          next.itemId,
+          saleId,
+        )),
+        {
+          date: next.date,
+          qty: next.qty,
+          conflictKind: "sale" as const,
+        },
+      ];
+      const conflict = findPurchaseTimelineConflict(purchasesRows, outs);
+      if (conflict) return { ok: false, conflict };
+    }
+  } else {
+    const conflict =
+      next.source === "manufactured"
+        ? await validateProposedManufacturedOut(orgId, next.itemId, {
+            date: next.date,
+            qty: next.qty,
+            conflictKind: "sale",
+          })
+        : await validateProposedResaleOut(orgId, next.itemId, {
+            date: next.date,
+            qty: next.qty,
+            conflictKind: "sale",
+          });
+    if (conflict) return { ok: false, conflict };
+  }
+
+  return { ok: true };
+}
+
+async function ingredientConsumptionEventsExcludingWriteOff(
+  orgId: string,
+  ingredientId: string,
+  excludeWriteOffId: number,
+): Promise<
+  Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>
+> {
+  const events = await ingredientConsumptionEvents(orgId, ingredientId);
+  const written = await qAll(
+    db
+      .select({
+        id: writeOffs.id,
+        date: writeOffs.date,
+        qty: writeOffs.qty,
+      })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Ingredient"),
+          eq(writeOffs.itemId, ingredientId),
+        ),
+      ),
+  );
+  const productionOnly = events.filter((e) => e.conflictKind === "production");
+  return [
+    ...productionOnly,
+    ...written
+      .filter((r) => r.id !== excludeWriteOffId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "writeOff" as const,
+      })),
+  ];
+}
+
+async function manufacturedProductOutsExcludingWriteOff(
+  orgId: string,
+  productId: string,
+  excludeWriteOffId: number,
+) {
+  const sold = await qAll(
+    db
+      .select({ date: sales.date, qty: sales.qty })
+      .from(sales)
+      .where(
+        and(
+          orgEq(sales.organizationId, orgId),
+          eq(sales.source, "manufactured"),
+          eq(sales.itemId, productId),
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({
+        id: writeOffs.id,
+        date: writeOffs.date,
+        qty: writeOffs.qty,
+      })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Product"),
+          eq(writeOffs.itemId, productId),
+        ),
+      ),
+  );
+  return [
+    ...sold.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "sale" as const,
+    })),
+    ...written
+      .filter((r) => r.id !== excludeWriteOffId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "writeOff" as const,
+      })),
+  ];
+}
+
+async function resaleConsumptionEventsExcludingWriteOff(
+  orgId: string,
+  productId: string,
+  excludeWriteOffId: number,
+): Promise<
+  Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>
+> {
+  const sold = await qAll(
+    db
+      .select({ date: sales.date, qty: sales.qty })
+      .from(sales)
+      .where(
+        and(
+          orgEq(sales.organizationId, orgId),
+          eq(sales.source, "resale"),
+          eq(sales.itemId, productId),
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({
+        id: writeOffs.id,
+        date: writeOffs.date,
+        qty: writeOffs.qty,
+      })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Product"),
+          eq(writeOffs.itemId, productId),
+        ),
+      ),
+  );
+  return [
+    ...sold.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "sale" as const,
+    })),
+    ...written
+      .filter((r) => r.id !== excludeWriteOffId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "writeOff" as const,
+      })),
+  ];
+}
+
+async function isManufacturedProduct(
+  orgId: string,
+  itemId: string,
+): Promise<boolean> {
+  const prod = await qGet(
+    db
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        and(orgEq(products.organizationId, orgId), eq(products.id, itemId)),
+      ),
+  );
+  return Boolean(prod);
+}
+
+/** Validate replacing a write-off (exclude old row, apply new fields). */
+export async function validateWriteOffUpdate(
+  orgId: string,
+  writeOffId: number,
+  next: {
+    date: string;
+    kind: "Ingredient" | "Product";
+    itemId: string;
+    qty: number;
+  },
+): Promise<
+  | { ok: true }
+  | {
+      ok: false;
+      conflict?: PurchaseTimelineConflict;
+      stockError?: string;
+    }
+> {
+  const existing = await qGet(
+    db
+      .select()
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.id, writeOffId),
+        ),
+      ),
+  );
+  if (!existing) {
+    return { ok: false, stockError: "არ მოიძებნა" };
+  }
+
+  const sameItem =
+    existing.kind === next.kind && existing.itemId === next.itemId;
+
+  let stock = 0;
+  let nextIsManufactured = false;
+  if (next.kind === "Ingredient") {
+    stock = await ingredientStock(orgId, next.itemId);
+  } else {
+    nextIsManufactured = await isManufacturedProduct(orgId, next.itemId);
+    stock = nextIsManufactured
+      ? await productStock(orgId, next.itemId)
+      : await resaleStock(orgId, next.itemId);
+  }
+  const available = sameItem ? stock + Number(existing.qty) : stock;
+  if (available + 1e-9 < next.qty) {
+    return {
+      ok: false,
+      stockError: `არასაკმარისი ნაშთი (არის ${formatQty(available)})`,
+    };
+  }
+
+  if (sameItem) {
+    if (next.kind === "Ingredient") {
+      const purchasesRows = await purchaseRowsForItem(
+        orgId,
+        "Ingredient",
+        next.itemId,
+      );
+      const outs = [
+        ...(await ingredientConsumptionEventsExcludingWriteOff(
+          orgId,
+          next.itemId,
+          writeOffId,
+        )),
+        {
+          date: next.date,
+          qty: next.qty,
+          conflictKind: "writeOff" as const,
+        },
+      ];
+      const conflict = findPurchaseTimelineConflict(purchasesRows, outs);
+      if (conflict) return { ok: false, conflict };
+    } else if (nextIsManufactured) {
+      const ins = await manufacturedProductIns(orgId, next.itemId);
+      const outs = [
+        ...(await manufacturedProductOutsExcludingWriteOff(
+          orgId,
+          next.itemId,
+          writeOffId,
+        )),
+        {
+          date: next.date,
+          qty: next.qty,
+          conflictKind: "writeOff" as const,
+        },
+      ];
+      const conflict = findPurchaseTimelineConflict(ins, outs);
+      if (conflict) return { ok: false, conflict };
+    } else {
+      const purchasesRows = await purchaseRowsForItem(
+        orgId,
+        "Product",
+        next.itemId,
+      );
+      const outs = [
+        ...(await resaleConsumptionEventsExcludingWriteOff(
+          orgId,
+          next.itemId,
+          writeOffId,
+        )),
+        {
+          date: next.date,
+          qty: next.qty,
+          conflictKind: "writeOff" as const,
+        },
+      ];
+      const conflict = findPurchaseTimelineConflict(purchasesRows, outs);
+      if (conflict) return { ok: false, conflict };
+    }
+  } else {
+    const conflict =
+      next.kind === "Ingredient"
+        ? await validateProposedIngredientOut(orgId, next.itemId, {
+            date: next.date,
+            qty: next.qty,
+            conflictKind: "writeOff",
+          })
+        : nextIsManufactured
+          ? await validateProposedManufacturedOut(orgId, next.itemId, {
+              date: next.date,
+              qty: next.qty,
+              conflictKind: "writeOff",
+            })
+          : await validateProposedResaleOut(orgId, next.itemId, {
+              date: next.date,
+              qty: next.qty,
+              conflictKind: "writeOff",
+            });
+    if (conflict) return { ok: false, conflict };
+  }
+
+  return { ok: true };
+}
+
+async function manufacturedProductInsExcludingRun(
+  orgId: string,
+  productId: string,
+  excludeRunId: number,
+) {
+  const rows = await qAll(
+    db
+      .select({
+        id: productionRuns.id,
+        date: productionRuns.date,
+        qty: productionRuns.qty,
+      })
+      .from(productionRuns)
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(productionRuns.productId, productId),
+        ),
+      ),
+  );
+  return rows
+    .filter((r) => r.id !== excludeRunId)
+    .map((r) => ({ date: r.date, qty: Number(r.qty) }));
+}
+
+/** True if removing this production run would leave manufactured stock negative. */
+export async function validateProductionRunRemoval(
+  orgId: string,
+  productId: string,
+  runId: number,
+): Promise<PurchaseTimelineConflict | null> {
+  const ins = await manufacturedProductInsExcludingRun(
+    orgId,
+    productId,
+    runId,
+  );
+  const outs = await manufacturedProductOuts(orgId, productId);
+  return findPurchaseTimelineConflict(ins, outs);
+}
+
+async function ingredientConsumptionEventsExcludingRun(
+  orgId: string,
+  ingredientId: string,
+  excludeRunId: number,
+): Promise<
+  Array<{
+    date: string;
+    qty: number;
+    conflictKind: PurchaseTimelineConflict["conflictKind"];
+  }>
+> {
+  const fromSnapshot = await qAll(
+    db
+      .select({
+        date: productionRuns.date,
+        qty: productionIngredientUsage.qty,
+        runId: productionRuns.id,
+      })
+      .from(productionIngredientUsage)
+      .innerJoin(
+        productionRuns,
+        eq(productionIngredientUsage.runId, productionRuns.id),
+      )
+      .where(
+        and(
+          orgEq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.ingredientId, ingredientId),
+        ),
+      ),
+  );
+  const fromLegacy = await qAll(
+    db
+      .select({
+        date: productionRuns.date,
+        qty: sql<number>`${productionRuns.qty} * ${recipeLines.qty}`,
+        runId: productionRuns.id,
+      })
+      .from(productionRuns)
+      .innerJoin(
+        recipeLines,
+        and(
+          eq(recipeLines.productId, productionRuns.productId),
+          eq(recipeLines.organizationId, productionRuns.organizationId),
+        ),
+      )
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(recipeLines.ingredientId, ingredientId),
+          sql`NOT EXISTS (SELECT 1 FROM production_ingredient_usage u WHERE u.run_id = ${productionRuns.id})`,
+        ),
+      ),
+  );
+  const written = await qAll(
+    db
+      .select({ date: writeOffs.date, qty: writeOffs.qty })
+      .from(writeOffs)
+      .where(
+        and(
+          orgEq(writeOffs.organizationId, orgId),
+          eq(writeOffs.kind, "Ingredient"),
+          eq(writeOffs.itemId, ingredientId),
+        ),
+      ),
+  );
+  return [
+    ...fromSnapshot
+      .filter((r) => r.runId !== excludeRunId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "production" as const,
+      })),
+    ...fromLegacy
+      .filter((r) => r.runId !== excludeRunId)
+      .map((r) => ({
+        date: r.date,
+        qty: Number(r.qty),
+        conflictKind: "production" as const,
+      })),
+    ...written.map((r) => ({
+      date: r.date,
+      qty: Number(r.qty),
+      conflictKind: "writeOff" as const,
+    })),
+  ];
+}
+
+export async function runIngredientUsageQty(
+  orgId: string,
+  runId: number,
+  ingredientId: string,
+): Promise<number> {
+  const snap = await qGet(
+    db
+      .select({
+        qty: sql<number>`coalesce(sum(${productionIngredientUsage.qty}), 0)`,
+      })
+      .from(productionIngredientUsage)
+      .where(
+        and(
+          orgEq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.runId, runId),
+          eq(productionIngredientUsage.ingredientId, ingredientId),
+        ),
+      ),
+  );
+  if (snap && Number(snap.qty) > 0) return Number(snap.qty);
+
+  const run = await qGet(
+    db
+      .select()
+      .from(productionRuns)
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(productionRuns.id, runId),
+        ),
+      ),
+  );
+  if (!run) return 0;
+  const line = await qGet(
+    db
+      .select()
+      .from(recipeLines)
+      .where(
+        and(
+          orgEq(recipeLines.organizationId, orgId),
+          eq(recipeLines.productId, run.productId),
+          eq(recipeLines.ingredientId, ingredientId),
+        ),
+      ),
+  );
+  return line ? Number(run.qty) * Number(line.qty) : 0;
+}
+
+/** Validate replacing a production run (exclude old run, apply new fields). */
+export async function validateProductionRunUpdate(
+  orgId: string,
+  runId: number,
+  next: { date: string; productId: string; qty: number },
+): Promise<
+  | { ok: true }
+  | {
+      ok: false;
+      conflict?: PurchaseTimelineConflict;
+      stockError?: string;
+    }
+> {
+  const existing = await qGet(
+    db
+      .select()
+      .from(productionRuns)
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(productionRuns.id, runId),
+        ),
+      ),
+  );
+  if (!existing) {
+    return { ok: false, stockError: "არ მოიძებნა" };
+  }
+
+  const lines = await qAll(
+    db
+      .select()
+      .from(recipeLines)
+      .where(
+        and(
+          orgEq(recipeLines.organizationId, orgId),
+          eq(recipeLines.productId, next.productId),
+        ),
+      ),
+  );
+  const activeLines = lines.filter((line) => Number(line.qty) > 1e-12);
+  if (activeLines.length === 0) {
+    return { ok: false, stockError: "შემადგენლობა არ არის" };
+  }
+
+  for (const line of activeLines) {
+    const need = line.qty * next.qty;
+    const oldUsage = await runIngredientUsageQty(
+      orgId,
+      runId,
+      line.ingredientId,
+    );
+    const have = (await ingredientStock(orgId, line.ingredientId)) + oldUsage;
+    if (have + 1e-9 < need) {
+      return {
+        ok: false,
+        stockError: `არასაკმარისი ნაშთი: ${line.ingredientId} (სჭირდება ${formatQty(need)}, არის ${formatQty(have)})`,
+      };
+    }
+    const purchasesRows = await purchaseRowsForItem(
+      orgId,
+      "Ingredient",
+      line.ingredientId,
+    );
+    const outs = [
+      ...(await ingredientConsumptionEventsExcludingRun(
+        orgId,
+        line.ingredientId,
+        runId,
+      )),
+      {
+        date: next.date,
+        qty: need,
+        conflictKind: "production" as const,
+      },
+    ];
+    const conflict = findPurchaseTimelineConflict(purchasesRows, outs);
+    if (conflict) return { ok: false, conflict };
+  }
+
+  // Manufactured product timeline: remove old run, add updated run.
+  const productsToCheck = new Set([existing.productId, next.productId]);
+  for (const productId of productsToCheck) {
+    const ins = await manufacturedProductInsExcludingRun(
+      orgId,
+      productId,
+      runId,
+    );
+    if (productId === next.productId) {
+      ins.push({ date: next.date, qty: next.qty });
+    }
+    const outs = await manufacturedProductOuts(orgId, productId);
+    const conflict = findPurchaseTimelineConflict(ins, outs);
+    if (conflict) return { ok: false, conflict };
+  }
+
+  return { ok: true };
 }
 
 /**
@@ -764,6 +1538,45 @@ export async function productsListEnriched(orgId: string) {
   await cache.warmListCosts();
   await Promise.all(rows.map((r) => cache.productFullUnitCostCached(r.id)));
 
+  const [runIds, saleIds, writeOffIds] = await Promise.all([
+    qAll(
+      db
+        .select({ productId: productionRuns.productId })
+        .from(productionRuns)
+        .where(orgEq(productionRuns.organizationId, orgId))
+        .groupBy(productionRuns.productId),
+    ),
+    qAll(
+      db
+        .select({ itemId: sales.itemId })
+        .from(sales)
+        .where(
+          and(
+            orgEq(sales.organizationId, orgId),
+            eq(sales.source, "manufactured"),
+          ),
+        )
+        .groupBy(sales.itemId),
+    ),
+    qAll(
+      db
+        .select({ itemId: writeOffs.itemId })
+        .from(writeOffs)
+        .where(
+          and(
+            orgEq(writeOffs.organizationId, orgId),
+            eq(writeOffs.kind, "Product"),
+          ),
+        )
+        .groupBy(writeOffs.itemId),
+    ),
+  ]);
+  const hasOps = new Set<string>([
+    ...runIds.map((r) => r.productId),
+    ...saleIds.map((r) => r.itemId),
+    ...writeOffIds.map((r) => r.itemId),
+  ]);
+
   return Promise.all(
     rows.map(async (r) => {
       const qtyIn = await cache.productQtyInCached(r.id);
@@ -781,7 +1594,7 @@ export async function productsListEnriched(orgId: string) {
         fullTotal: qtyIn * fullUnit,
         stock,
         stockValue: stock * fullUnit,
-        recommendedPrice: fullUnit * 3,
+        canDelete: !hasOps.has(r.id),
       };
     }),
   );

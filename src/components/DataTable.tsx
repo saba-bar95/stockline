@@ -35,6 +35,13 @@ type Props<T> = {
   defaultPageSize?: 20 | 30 | 50;
   /** Hide global search (e.g. compact tables in modals). */
   searchable?: boolean;
+  /** Optional footer cell content keyed by column `key`. */
+  footer?: Record<string, ReactNode>;
+  /**
+   * Scroll the window to the top when the table page/size changes.
+   * Disable inside modals so opening/paging does not jump the dialog.
+   */
+  scrollOnPageChange?: boolean;
 };
 
 const PAGE_SIZES = [20, 30, 50] as const;
@@ -64,6 +71,8 @@ function DataTable<T>({
   defaultSortDir = "asc",
   defaultPageSize = 20,
   searchable = true,
+  footer,
+  scrollOnPageChange = true,
 }: Props<T>) {
   const { t, numberLocale } = usePrefs();
   const [filter, setFilter] = useState("");
@@ -148,19 +157,21 @@ function DataTable<T>({
   }
 
   const showColFilters = columns.some((c) => c.filterable !== false);
-  const topRef = useRef<HTMLDivElement>(null);
-  const skipScrollRef = useRef(true);
+  const prevPageRef = useRef({ safePage, pageSize });
 
   useEffect(() => {
-    if (skipScrollRef.current) {
-      skipScrollRef.current = false;
-      return;
-    }
-    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [safePage, pageSize]);
+    if (!scrollOnPageChange) return;
+    const prev = prevPageRef.current;
+    const changed =
+      prev.safePage !== safePage || prev.pageSize !== pageSize;
+    prevPageRef.current = { safePage, pageSize };
+    // Skip initial mount (and Strict Mode's second effect pass).
+    if (!changed) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [safePage, pageSize, scrollOnPageChange]);
 
   return (
-    <div ref={topRef} className="space-y-4 scroll-mt-4">
+    <div className="space-y-4">
       {searchable ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <label className="field mb-0 min-w-0 flex-1 sm:max-w-sm">
@@ -313,6 +324,24 @@ function DataTable<T>({
               ))
             )}
           </tbody>
+          {footer && !loading && pageRows.length > 0 ? (
+            <tfoot>
+              <tr className="border-t-2 border-line bg-paper/80">
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={cn(
+                      "border-r border-line/70 px-3 py-2.5 text-sm font-semibold tabular-nums text-ink last:border-r-0",
+                      col.align === "right" && "text-right",
+                      col.align === "center" && "text-center",
+                    )}
+                  >
+                    {footer[col.key] ?? null}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          ) : null}
         </table>
       </div>
 

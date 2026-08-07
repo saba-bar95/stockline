@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
@@ -29,6 +29,8 @@ export function Modal({
   listenKeys = true,
 }: Props) {
   const t = useT();
+  const panelRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
     if (!open || !listenKeys) return;
     const onKey = (e: KeyboardEvent) => {
@@ -46,6 +48,11 @@ export function Modal({
     };
   }, [open, listenKeys, onClose, onBack]);
 
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [open, title]);
+
   if (!open) return null;
 
   const dismiss = onBack ?? onClose;
@@ -61,6 +68,7 @@ export function Modal({
       style={{ animation: "modal-backdrop 0.2s ease both" }}
     >
       <article
+        ref={panelRef}
         className={cn(
           "max-h-[min(90vh,840px)] w-full overflow-auto rounded-2xl border border-line bg-panel p-5 shadow-2xl sm:p-6",
           wide ? "max-w-5xl" : "max-w-md",

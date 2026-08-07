@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
+import { Modal } from "../components/Modal";
 import { ModalForm } from "../components/ModalForm";
 import { SelectField } from "../components/SelectField";
-import { PageHeader, Surface } from "../components/ui";
-import { api, money, qty, today } from "../lib/api";
+import { Button, PageHeader, Surface } from "../components/ui";
+import { api, formatApiError, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { usePageCount } from "../preferences/CountsContext";
 
@@ -30,6 +32,16 @@ export function ProductionPage() {
   const [productId, setProductId] = useState("");
   const [q, setQ] = useState("1");
 
+  const [editing, setEditing] = useState<Run | null>(null);
+  const [editDate, setEditDate] = useState(today());
+  const [editProductId, setEditProductId] = useState("");
+  const [editQty, setEditQty] = useState("1");
+  const [editBusy, setEditBusy] = useState(false);
+  const [editErr, setEditErr] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Run | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
+
   const load = useCallback(async () => {
     try {
       const rP = api<Run[]>("/production").then((r) => {
@@ -52,6 +64,67 @@ export function ProductionPage() {
   }, []);
 
   const pageCount = usePageCount("production", loading ? null : rows.length);
+
+  function openEdit(row: Run) {
+    setEditing(row);
+    setEditDate(row.date);
+    setEditProductId(row.productId);
+    setEditQty(String(row.qty));
+    setEditErr("");
+    setDeleteErr("");
+    setPendingDelete(null);
+  }
+
+  function closeEdit() {
+    if (editBusy || deleting) return;
+    setEditing(null);
+    setEditErr("");
+    setPendingDelete(null);
+    setDeleteErr("");
+  }
+
+  async function saveEdit() {
+    if (!editing || editBusy || deleting) return;
+    const qtyNum = Number(editQty);
+    if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+      setEditErr(t("common.formInvalid"));
+      return;
+    }
+    setEditBusy(true);
+    setEditErr("");
+    try {
+      await api(`/production/${editing.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          date: editDate,
+          productId: editProductId,
+          qty: qtyNum,
+        }),
+      });
+      setEditing(null);
+      await load();
+    } catch (e) {
+      setEditErr(formatApiError(e, t));
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteErr("");
+    try {
+      await api(`/production/${pendingDelete.id}`, { method: "DELETE" });
+      setPendingDelete(null);
+      setEditing(null);
+      await load();
+    } catch (e) {
+      setDeleteErr(formatApiError(e, t));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <>
@@ -166,9 +239,128 @@ export function ProductionPage() {
               filterValue: (r) => String(r.fullCost),
               render: (r) => money(r.fullCost, numberLocale),
             },
+            {
+              key: "actions",
+              label: "",
+              sortable: false,
+              filterable: false,
+              render: (r) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-w-22"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEdit(r);
+                  }}
+                >
+                  {t("common.edit")}
+                </Button>
+              ),
+            },
           ]}
         />
       </Surface>
+
+      <Modal
+        title={t("production.editTitle")}
+        open={Boolean(editing)}
+        onClose={closeEdit}
+        listenKeys={!pendingDelete}
+      >
+        <form
+          noValidate
+          className="space-y-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveEdit();
+          }}
+        >
+          <div className="field">
+            <span>{t("common.date")}</span>
+            <DateField value={editDate} onChange={setEditDate} required />
+          </div>
+          <div className="field">
+            <span>{t("common.product")}</span>
+            <SelectField
+              value={editProductId}
+              onChange={setEditProductId}
+              required
+              options={products.map((p) => ({
+                value: p.id,
+                label: p.name,
+              }))}
+            />
+          </div>
+          <label className="field">
+            {t("common.qty")}
+            <input
+              type="number"
+              step="any"
+              value={editQty}
+              onChange={(e) => setEditQty(e.target.value)}
+              required
+            />
+          </label>
+          {editErr ? (
+            <div
+              role="alert"
+              className="mt-3 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger"
+            >
+              {editErr}
+            </div>
+          ) : null}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="danger"
+              disabled={editBusy || deleting}
+              onClick={() => {
+                if (!editing) return;
+                setDeleteErr("");
+                setPendingDelete(editing);
+              }}
+            >
+              {t("common.delete")}
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeEdit}
+                disabled={editBusy || deleting}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button type="submit" disabled={editBusy || deleting}>
+                {editBusy ? t("common.saving") : t("common.save")}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        stacked
+        title={t("production.deleteTitle")}
+        message={
+          <div className="space-y-3">
+            <p>{t("production.deleteConfirm")}</p>
+            <p className="rounded-xl border border-amber/35 bg-amber/10 px-3.5 py-3 text-sm text-ink-soft">
+              {t("production.deleteWarn")}
+            </p>
+          </div>
+        }
+        error={deleteErr}
+        busy={deleting}
+        onCancel={() => {
+          if (deleting) return;
+          setPendingDelete(null);
+          setDeleteErr("");
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }

@@ -6,6 +6,7 @@ import App from "./App.tsx";
 import { AuthProvider, useApiToken } from "./lib/auth";
 import { setApiTokenGetter } from "./lib/api";
 import { PreferencesProvider } from "./preferences/PreferencesContext";
+import { BusyOverlayProvider } from "./components/BusyOverlay";
 
 function ApiTokenWire({ children }: { children: ReactNode }) {
   const getToken = useApiToken();
@@ -18,13 +19,15 @@ function ApiTokenWire({ children }: { children: ReactNode }) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <PreferencesProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <ApiTokenWire>
-            <App />
-          </ApiTokenWire>
-        </AuthProvider>
-      </BrowserRouter>
+      <BusyOverlayProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <ApiTokenWire>
+              <App />
+            </ApiTokenWire>
+          </AuthProvider>
+        </BrowserRouter>
+      </BusyOverlayProvider>
     </PreferencesProvider>
   </StrictMode>,
 );

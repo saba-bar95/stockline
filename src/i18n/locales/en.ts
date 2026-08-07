@@ -201,6 +201,7 @@ export const en: Messages = {
     description:
       "Raw materials — click a row for movement history (purchase, production, write-off).",
     newTitle: "New material",
+    editTitle: "Edit material",
     empty: "Nothing here yet — add the first material",
     lastPurchase: "Last buy",
     lastPurchaseFull: "Last purchase date",
@@ -252,6 +253,10 @@ export const en: Messages = {
     description:
       "Made-in-house items — click a row for movement history (production, sale, write-off).",
     newTitle: "New product",
+    editTitle: "Edit product",
+    deleteTitle: "Delete product",
+    deleteConfirm: "Delete “{name}”? This cannot be undone.",
+    deleteBlocked: "Cannot delete — operations already exist",
     qtyIn: "Produced",
     ingPerUnit: "Mat./unit",
     ingPerUnitFull: "Material cost per unit",
@@ -261,8 +266,6 @@ export const en: Messages = {
     fullUnitFull: "Full unit cost",
     stockValue: "Stock value",
     stockValueFull: "Stock value",
-    recommended: "Rec. 3×",
-    recommendedFull: "Recommended price (3× full unit cost)",
   },
   recipes: {
     title: "Compositions",
@@ -270,15 +273,27 @@ export const en: Messages = {
       "Products that have a composition — open Details to see materials for 1 unit.",
     newTitle: "Composition line",
     titleNamed: "{name} — composition",
-    perUnitHint: "Quantities per 1 unit of product",
+    perUnitHint: "Per one unit of product ({unit})",
     lines: "Materials",
     linesFull: "Number of materials in the composition",
+    lineCost: "Cost",
+    lineCostFull: "Cost of this material per one unit of product",
+    unitCostTotal: "Material unit cost",
+    unitCostTotalFull:
+      "Total material cost for one unit of product (at average prices)",
     empty: "No compositions yet — add a composition line to a product",
     emptyProduct: "No materials yet — use Add to build this composition",
+    editTitle: "Edit material qty",
+    nullifyTitle: "Nullify material",
+    nullifyConfirm:
+      "Set this material to 0 for future production? Past runs and P&L stay unchanged.",
+    nullify: "Nullify",
+    nullified: "Nullified",
+    duplicateBlocked: "This material is already in the composition.",
     deleteBlocked:
-      "Cannot delete — this material was already used when this product was produced.",
+      "Cannot delete — this material was already used when this product was produced. Nullify it instead.",
     deleteHint:
-      "Lines added after production can be removed; materials already used in a run stay locked.",
+      "Unused materials can be deleted. Materials already used in production can only be edited or nullified — past costs stay unchanged.",
   },
   purchases: {
     title: "Purchases",
@@ -315,6 +330,11 @@ export const en: Messages = {
     description:
       "Daily runs — materials drop by composition; overhead is allocated from that day’s pool.",
     newTitle: "New production run",
+    editTitle: "Edit production run",
+    deleteTitle: "Delete production run",
+    deleteConfirm: "Delete this production run? Material stock will be restored.",
+    deleteWarn:
+      "Delete is blocked if later sales or write-offs would leave product stock negative.",
     unitCost: "Unit cost",
     unitCostFull: "Material unit cost (snapshot)",
     ingTotal: "Mat. total",
@@ -328,17 +348,30 @@ export const en: Messages = {
     title: "Sales",
     description: "Manufactured or merchandise — revenue and COGS show up on the P&L.",
     newTitle: "New sale",
+    editTitle: "Edit sale",
+    deleteTitle: "Delete sale",
+    deleteConfirm: "Delete this sale? Product stock will be restored.",
+    deleteWarn:
+      "Deleting a sale restores stock and removes that revenue from the P&L.",
     manufactured: "Made",
     resale: "Merchandise",
     sellPrice: "Sale price",
     revenue: "Revenue",
+    inStock: "In stock: {qty}",
+    unitCost: "Unit cost: {cost}",
   },
   writeOffs: {
     title: "Write-offs",
     description: "Spoiled or lost materials / products.",
     newTitle: "New write-off",
+    editTitle: "Edit write-off",
+    deleteTitle: "Delete write-off",
+    deleteConfirm: "Delete this write-off? Stock will be restored.",
+    deleteWarn:
+      "Deleting a write-off restores stock and removes that loss from the P&L.",
     kindIngredient: "Material",
     kindProduct: "Product",
+    inStock: "In stock: {qty}",
   },
   hr: {
     title: "Payroll",

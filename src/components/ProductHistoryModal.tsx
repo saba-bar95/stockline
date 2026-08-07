@@ -114,6 +114,7 @@ export function ProductHistoryModal({ productId, onClose }: Props) {
             defaultSortKey="date"
             defaultSortDir="desc"
             emptyText={t("history.empty")}
+            scrollOnPageChange={false}
             columns={[
               {
                 key: "date",
@@ -160,7 +161,7 @@ export function ProductHistoryModal({ productId, onClose }: Props) {
                 key: "note",
                 label: t("common.note"),
                 sortValue: (r) => r.note,
-                filterValue: (r) => r.note,
+                filterValue: (r) => r.note || "—",
                 render: (r) => r.note || "—",
               },
             ]}

@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DataTable } from "../components/DataTable";
 import { IngredientHistoryModal } from "../components/IngredientHistoryModal";
+import { Modal } from "../components/Modal";
 import { ModalForm } from "../components/ModalForm";
 import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
-import { api, money, qty } from "../lib/api";
+import { api, formatApiError, money, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { usePageCount } from "../preferences/CountsContext";
@@ -22,6 +23,12 @@ type Row = {
   metricsPending?: boolean;
 };
 
+const UNIT_OPTIONS = [
+  { value: "kg", labelKey: "units.kg" as const },
+  { value: "l", labelKey: "units.l" as const },
+  { value: "pc", labelKey: "units.pc" as const },
+];
+
 export function IngredientsPage() {
   const { t, locale, numberLocale, qtyDecimals } = usePrefs();
   const [rows, setRows] = useState<Row[]>([]);
@@ -30,9 +37,17 @@ export function IngredientsPage() {
   const [unit, setUnit] = useState("kg");
   const [category, setCategory] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
+
+  const [editing, setEditing] = useState<Row | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editUnit, setEditUnit] = useState("kg");
+  const [editCategory, setEditCategory] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
+  const [editErr, setEditErr] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
+
   const pageCount = usePageCount("ingredients", loading ? null : rows.length);
   const load = useCallback(async () => {
     try {
@@ -68,6 +83,56 @@ export function IngredientsPage() {
     return [...set].sort((a, b) => a.localeCompare(b, "ka"));
   }, [rows]);
 
+  function openEdit(row: Row) {
+    setEditing(row);
+    setEditName(row.name);
+    setEditUnit(row.unit);
+    setEditCategory(row.category);
+    setEditErr("");
+    setDeleteErr("");
+    setPendingDelete(null);
+  }
+
+  function closeEdit() {
+    if (editBusy || deleting) return;
+    setEditing(null);
+    setEditErr("");
+    setPendingDelete(null);
+    setDeleteErr("");
+  }
+
+  async function saveEdit() {
+    if (!editing || editBusy || deleting) return;
+    const trimmedName = editName.trim();
+    const trimmedCategory = editCategory.trim();
+    if (!trimmedName) {
+      setEditErr(t("common.formInvalid"));
+      return;
+    }
+    if (!trimmedCategory) {
+      setEditErr(t("ingredients.categoryRequired"));
+      return;
+    }
+    setEditBusy(true);
+    setEditErr("");
+    try {
+      await api(`/ingredients/${editing.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: trimmedName,
+          unit: editUnit,
+          category: trimmedCategory,
+        }),
+      });
+      setEditing(null);
+      await load();
+    } catch (e) {
+      setEditErr(formatApiError(e, t));
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
   async function confirmDelete() {
     if (!pendingDelete || deleting) return;
     setDeleting(true);
@@ -76,9 +141,10 @@ export function IngredientsPage() {
       await api(`/ingredients/${pendingDelete.id}`, { method: "DELETE" });
       if (historyId === pendingDelete.id) setHistoryId(null);
       setPendingDelete(null);
+      setEditing(null);
       await load();
     } catch (e) {
-      setDeleteErr(e instanceof Error ? e.message : t("common.error"));
+      setDeleteErr(formatApiError(e, t));
     } finally {
       setDeleting(false);
     }
@@ -122,11 +188,10 @@ export function IngredientsPage() {
                 value={unit}
                 onChange={setUnit}
                 searchable={false}
-                options={[
-                  { value: "kg", label: t("units.kg") },
-                  { value: "l", label: t("units.l") },
-                  { value: "pc", label: t("units.pc") },
-                ]}
+                options={UNIT_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: t(o.labelKey),
+                }))}
               />
             </div>
             <div className="field">
@@ -217,37 +282,119 @@ export function IngredientsPage() {
               label: "",
               sortable: false,
               filterable: false,
-              render: (r) =>
-                r.metricsPending ? (
-                  <span className="text-xs text-ink-muted">…</span>
-                ) : r.canDelete ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="min-w-22 text-danger hover:bg-danger/10 hover:text-danger"
-                    disabled={deleting}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteErr("");
-                      setPendingDelete(r);
-                    }}
-                  >
-                    {t("common.delete")}
-                  </Button>
-                ) : (
-                  <span
-                    className="text-xs text-ink-muted"
-                    title={t("ingredients.deleteBlocked")}
-                  >
-                    —
-                  </span>
-                ),
+              render: (r) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-w-22"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEdit(r);
+                  }}
+                >
+                  {t("common.edit")}
+                </Button>
+              ),
             },
           ]}
         />
       </Surface>
+
+      <Modal
+        title={t("ingredients.editTitle")}
+        open={Boolean(editing)}
+        onClose={closeEdit}
+        listenKeys={!pendingDelete}
+      >
+        <form
+          noValidate
+          className="space-y-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveEdit();
+          }}
+        >
+          {editing ? (
+            <p className="mb-3 text-sm text-ink-muted">
+              ID: <strong className="mono text-ink">{editing.id}</strong>
+            </p>
+          ) : null}
+          <label className="field">
+            {t("common.name")}
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              required
+            />
+          </label>
+          <div className="field">
+            <span>{t("common.unit")}</span>
+            <SelectField
+              value={editUnit}
+              onChange={setEditUnit}
+              searchable={false}
+              options={UNIT_OPTIONS.map((o) => ({
+                value: o.value,
+                label: t(o.labelKey),
+              }))}
+            />
+          </div>
+          <div className="field">
+            <span>{t("common.category")}</span>
+            <SelectField
+              value={editCategory}
+              onChange={setEditCategory}
+              allowCustom
+              required
+              placeholder={t("ingredients.categoryHint")}
+              options={categories.map((c) => ({ value: c, label: c }))}
+            />
+          </div>
+          {editErr ? (
+            <div
+              role="alert"
+              className="mt-3 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger"
+            >
+              {editErr}
+            </div>
+          ) : null}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+            {editing?.canDelete ? (
+              <Button
+                type="button"
+                variant="danger"
+                disabled={editBusy || deleting}
+                onClick={() => {
+                  if (!editing) return;
+                  setDeleteErr("");
+                  setPendingDelete(editing);
+                }}
+              >
+                {t("common.delete")}
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeEdit}
+                disabled={editBusy || deleting}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button type="submit" disabled={editBusy || deleting}>
+                {editBusy ? t("common.saving") : t("common.save")}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
       <ConfirmModal
         open={Boolean(pendingDelete)}
+        stacked
         title={t("ingredients.deleteTitle")}
         message={t("ingredients.deleteConfirm", {
           name: pendingDelete?.name ?? "",
@@ -261,6 +408,7 @@ export function IngredientsPage() {
         }}
         onConfirm={() => void confirmDelete()}
       />
+
       <IngredientHistoryModal
         ingredientId={historyId}
         onClose={() => setHistoryId(null)}
