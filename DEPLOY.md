@@ -5,14 +5,15 @@
 
 პროდუქტი: **Stockline** — მასალები, შემადგენლობა, წარმოება, გაყიდვები, ხელფასები, ხარჯები და მოგება-ზარალი.
 განსაზღვრული დომენები (შემდეგ): `stockline.app`, `stockline.io`, `getstockline.com`.
-GitHub repo უკვე `saba-bar95/stockline`. Vercel / Railway ჰოსტები ჯერ `mise-*` URL-ებითაა — გადარქმევა ხელით (ქვემოთ).
+GitHub: `saba-bar95/stockline`. Live UI: `https://stockline-app-zt12.vercel.app`.
+Railway API host still uses the older `mise-app-production-…` hostname until renamed there.
 
 ---
 
 ## არქიტექტურა
 
 ```
-Browser  →  Vercel (https://mise-app-hazel.vercel.app)
+Browser  →  Vercel (https://stockline-app-zt12.vercel.app)
                 │  /api/*  rewrite (proxy)
                 ▼
             Railway (https://mise-app-production-193e.up.railway.app)
@@ -65,7 +66,7 @@ DATABASE_URL="postgresql://USER:PASS@HOST/neondb?sslmode=require" npm run db:pus
 ```
 CLERK_SECRET_KEY=sk_live_... ან sk_test_...
 DATABASE_URL=postgresql://...neon.tech/...   # იგივე Neon URL
-CORS_ORIGIN=https://YOUR_VERCEL_DOMAIN.vercel.app
+CORS_ORIGIN=https://stockline-app-zt12.vercel.app
 MAX_ORGS=25
 REGISTRATION_OPEN=true
 PORT=3001
@@ -80,7 +81,7 @@ npx tsx server/run.ts
 ```
 
 4. **Generate Domain** (Settings → Networking) — მიიღებ რაღაცას:  
-   `https://mise-api-production-xxxx.up.railway.app`
+   `https://mise-app-production-193e.up.railway.app` (ან ახალი სახელი თუ გადაარქვი)
 5. შეამოწმე:  
    `https://YOUR_RAILWAY_HOST/api/health`  
    პასუხი უნდა იყოს `{"ok":true,"app":"stockline"}`.
@@ -103,18 +104,18 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_... ან pk_live_...
 "destination": "https://YOUR_RAILWAY_HOST/api/:path*"
 ```
 
-მაგალითი:
+მაგალითი (მიმდინარე):
 
 ```json
-"destination": "https://mise-api-production-xxxx.up.railway.app/api/:path*"
+"destination": "https://mise-app-production-193e.up.railway.app/api/:path*"
 ```
 
-5. Deploy. მიიღებ: `https://mise-xxxxx.vercel.app`.
+5. Deploy. მიმდინარე UI: `https://stockline-app-zt12.vercel.app`.
 
 6. Railway-ზე განაახლე:
 
 ```
-CORS_ORIGIN=https://mise-xxxxx.vercel.app
+CORS_ORIGIN=https://stockline-app-zt12.vercel.app
 ```
 
 (თუ რამდენიმე origin გინდა: მძიმით გამოყავი.)
@@ -126,9 +127,9 @@ CORS_ORIGIN=https://mise-xxxxx.vercel.app
 Clerk Dashboard → შენი აპლიკაცია:
 
 1. **Paths / URLs**
-   - Sign-in: `https://YOUR_VERCEL/ka/sign-in` (და `/en/sign-in` თუ გინდა)
-   - Sign-up: `https://YOUR_VERCEL/ka/sign-up`
-2. **Allowed origins / redirect URLs** — დაამატე Vercel დომენი.
+   - Sign-in: `https://stockline-app-zt12.vercel.app/ka/sign-in` (და `/en/sign-in` თუ გინდა)
+   - Sign-up: `https://stockline-app-zt12.vercel.app/ka/sign-up`
+2. **Allowed origins / redirect URLs** — დაამატე Vercel დომენი (თუ Dashboard-ში გაქვს ასეთი ველი).
 3. Google OAuth ჩართული თუ გინდა სოციალური login.
 4. Test keys (`pk_test` / `sk_test`) საკმარისია სტეიჯინგისთვის; პორტფოლიოსთვის ხშირად live keys გადაჰყავთ.
 

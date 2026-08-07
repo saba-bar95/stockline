@@ -6,7 +6,7 @@ Built for **operations managers, accountants, directors, and owners** who need m
 
 Each signed-in organization only sees its own data (`organizationId` scoping). Auth via Clerk; Neon Postgres in production.
 
-**Live:** [mise-app-hazel.vercel.app](https://mise-app-hazel.vercel.app) (rename Vercel project to update this URL)
+**Live:** [stockline-app-zt12.vercel.app](https://stockline-app-zt12.vercel.app/)
 
 **Intended domains** (buy / wire later): `stockline.app`, `stockline.io`, `getstockline.com`
 
@@ -86,7 +86,7 @@ See `.env.example`. Important ones:
 | `VITE_CLERK_PUBLISHABLE_KEY` | Local `.env` + **Vercel** | Clerk in the browser (baked at **build** time) |
 | `CLERK_SECRET_KEY` | Local `.env` + **Railway** | JWT verify on API |
 | `DATABASE_URL` | Local optional / **Railway** + Neon push | Empty → SQLite; `postgresql://…` → Neon |
-| `CORS_ORIGIN` | **Railway** | e.g. `https://mise-app-hazel.vercel.app` |
+| `CORS_ORIGIN` | **Railway** | e.g. `https://stockline-app-zt12.vercel.app` |
 | `MAX_ORGS` / `REGISTRATION_OPEN` | Railway | Cap / pause new organizations |
 | `PORT` | Railway | Default `3001` |
 
