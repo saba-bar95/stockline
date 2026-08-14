@@ -308,7 +308,7 @@ async function main() {
   }
 
   const emps =
-    read<Array<{ c1: string; c2: string; c4: string; c5: string }>>(
+    read<Array<{ c1: string; c2: string; c3: string; c4: string; c5: string }>>(
       "employees.json",
     );
   let empN = 0;
@@ -319,6 +319,7 @@ async function main() {
         id: r.c1,
         organizationId: ORG_ID,
         name: r.c2,
+        position: String(r.c3 || ""),
         dailyRate: num(r.c4),
         status: r.c5 || "აქტიური",
       }),

@@ -4,6 +4,12 @@ import { eq, sql } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import { db, qGet, qRun } from "./db/index.ts";
 import { newId } from "./db/logic.ts";
+import { ERR } from "./errors.ts";
+import {
+  clerkAuthorizedParties,
+  isPublicHealthPath,
+  requireClerkAuth,
+} from "./security.ts";
 
 const { memberships, organizations } = s;
 export type AuthVars = {
@@ -109,7 +115,7 @@ export async function resolveAuth(userId: string): Promise<
   return { ok: true, organizationId: created.orgId, orgName: created.name };
 }
 export async function authMiddleware(c: Context, next: Next) {
-  if (c.req.path.endsWith("/health") || c.req.path.includes("/health")) {
+  if (isPublicHealthPath(c.req.path)) {
     return next();
   }
   // Vitest: impersonate tenant via headers (never enabled in production)
@@ -122,10 +128,13 @@ export async function authMiddleware(c: Context, next: Next) {
       c.set("orgName", "Test Kitchen");
       return next();
     }
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json(ERR.unauthorized, 401);
   }
-  // Local offline mode when Clerk is not configured
   if (!clerkConfigured()) {
+    if (requireClerkAuth()) {
+      console.error("CLERK_SECRET_KEY is required in production");
+      return c.json(ERR.misconfigured, 503);
+    }
     const org = await ensureDevOrg();
     c.set("userId", DEV_USER);
     c.set("organizationId", org.id);
@@ -135,22 +144,24 @@ export async function authMiddleware(c: Context, next: Next) {
   const header = c.req.header("Authorization");
   const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json(ERR.unauthorized, 401);
   }
   try {
+    const authorizedParties = clerkAuthorizedParties();
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY!,
+      ...(authorizedParties ? { authorizedParties } : {}),
     });
     const userId = payload.sub;
-    if (!userId) return c.json({ error: "Unauthorized" }, 401);
+    if (!userId) return c.json(ERR.unauthorized, 401);
     const auth = await resolveAuth(userId);
-    if (!auth.ok) return c.json({ error: auth.error }, auth.status);
+    if (!auth.ok) return c.json({ error: auth.error, code: "forbidden" }, auth.status);
     c.set("userId", userId);
     c.set("organizationId", auth.organizationId);
     c.set("orgName", auth.orgName);
     return next();
   } catch {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json(ERR.unauthorized, 401);
   }
 }
 export function getOrg(c: Context): string {

@@ -20,3 +20,17 @@ export function isPostgresUrl(url: string | undefined): boolean {
     url?.startsWith("postgres://") || url?.startsWith("postgresql://"),
   );
 }
+
+export async function ensurePostgresColumns(databaseUrl: string) {
+  const sql = neon(databaseUrl);
+  try {
+    await sql`ALTER TABLE employees ADD COLUMN IF NOT EXISTS position text NOT NULL DEFAULT ''`;
+  } catch {
+    // Schema may not exist yet (before drizzle push).
+  }
+  try {
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS memberships_user_unique ON memberships (user_id)`;
+  } catch {
+    // Table missing or duplicate user_id rows.
+  }
+}

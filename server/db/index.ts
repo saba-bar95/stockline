@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createNeonDb, isPostgresUrl } from "./neon.ts";
+import { createNeonDb, ensurePostgresColumns, isPostgresUrl } from "./neon.ts";
 import * as sqliteSchema from "./schema.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +36,13 @@ export const db: any = isPostgres
   ? createNeonDb(rawUrl!)
   : drizzle(sqlite!, { schema: sqliteSchema });
 export const rawSqlite = sqlite;
+
+function ensureSqliteColumn(table: string, column: string, ddl: string) {
+  if (!sqlite) return;
+  const cols = sqlite.pragma(`table_info(${table})`) as Array<{ name: string }>;
+  if (cols.some((c) => c.name === column)) return;
+  sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
 
 export function migrate() {
   if (!sqlite) return;
@@ -154,6 +161,7 @@ export function migrate() {
       id TEXT PRIMARY KEY,
       organization_id TEXT NOT NULL REFERENCES organizations(id),
       name TEXT NOT NULL,
+      position TEXT NOT NULL DEFAULT '',
       daily_rate REAL NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'აქტიური'
     );
@@ -180,6 +188,23 @@ export function migrate() {
     );
     CREATE INDEX IF NOT EXISTS expenses_org_idx ON expenses(organization_id);
   `);
+  ensureSqliteColumn(
+    "employees",
+    "position",
+    "position TEXT NOT NULL DEFAULT ''",
+  );
+  try {
+    sqlite.exec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS memberships_user_unique ON memberships(user_id)`,
+    );
+  } catch {
+    // Duplicate user_id rows would block this; app still runs with the non-unique index.
+  }
+}
+
+export async function migratePostgres() {
+  if (!isPostgres || !rawUrl) return;
+  await ensurePostgresColumns(rawUrl);
 }
 
 export async function qAll<T = any>(builder: any): Promise<T[]> {

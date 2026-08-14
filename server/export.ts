@@ -164,7 +164,7 @@ export async function handleExportCsv(
   entity: string,
 ) {
   if (!ENTITIES.includes(entity as Entity)) {
-    return c.json({ error: "Unknown export entity" }, 400);
+    return c.json({ error: "unknown_export", code: "unknown_export" }, 400);
   }
   const rows = await entityRows(orgId, entity as Entity);
   const body = toCsv(rows);

@@ -320,6 +320,76 @@ describe("production edit/delete consistency", () => {
   });
 });
 
+describe("master-data unit guards", () => {
+  it("allows changing a material unit when operations exist", async () => {
+    const res = await api(`/api/ingredients/${ING}`, {
+      method: "PATCH",
+      userId: USER,
+      orgId: ORG,
+      body: JSON.stringify({
+        name: "Sugar",
+        unit: "l",
+        category: "dry",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const row = await qGet(
+      db
+        .select()
+        .from(ingredients)
+        .where(and(eq(ingredients.organizationId, ORG), eq(ingredients.id, ING))),
+    );
+    expect(row?.unit).toBe("l");
+    await qRun(
+      db
+        .update(ingredients)
+        .set({ unit: "kg" })
+        .where(and(eq(ingredients.organizationId, ORG), eq(ingredients.id, ING))),
+    );
+  });
+
+  it("allows canonicalizing a legacy material unit while operations exist", async () => {
+    await qRun(
+      db
+        .update(ingredients)
+        .set({ unit: "კგ" })
+        .where(and(eq(ingredients.organizationId, ORG), eq(ingredients.id, ING))),
+    );
+    const res = await api(`/api/ingredients/${ING}`, {
+      method: "PATCH",
+      userId: USER,
+      orgId: ORG,
+      body: JSON.stringify({
+        name: "Sugar",
+        unit: "kg",
+        category: "dry",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const row = await qGet(
+      db
+        .select()
+        .from(ingredients)
+        .where(and(eq(ingredients.organizationId, ORG), eq(ingredients.id, ING))),
+    );
+    expect(row?.unit).toBe("kg");
+  });
+
+  it("allows changing the unit of an unused material", async () => {
+    const res = await api(`/api/ingredients/${ING_UNUSED}`, {
+      method: "PATCH",
+      userId: USER,
+      orgId: ORG,
+      body: JSON.stringify({
+        name: "Unused spice",
+        unit: "pc",
+        category: "dry",
+      }),
+    });
+    expect(res.status).toBe(200);
+  });
+});
+
 describe("master-data delete guards", () => {
   it("allows deleting an unused product and unused material", async () => {
     const prodDel = await api(`/api/products/${PROD_UNUSED}`, {
@@ -560,9 +630,13 @@ describe("sales edit/delete consistency", () => {
       }),
     });
     expect(oversell.status).toBe(400);
-    const oversellBody = (await oversell.json()) as { error?: string };
-    expect(oversellBody.error).toContain("არასაკმარისი ნაშთი");
-    expect(oversellBody.error).toMatch(/\(არის 10\)/);
+    const oversellBody = (await oversell.json()) as {
+      error?: string;
+      code?: string;
+      stock?: string;
+    };
+    expect(oversellBody.code).toBe("insufficient_stock");
+    expect(oversellBody.stock).toBe("10");
     expect(await resaleStock(ORG, RESALE)).toBeCloseTo(6, 6);
 
     const beforePurchase = await api(`/api/sales/${sale!.id}`, {
@@ -712,8 +786,8 @@ describe("write-off edit/delete consistency", () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error?: string };
-    expect(body.error).toContain("არასაკმარისი ნაშთი");
+    const body = (await res.json()) as { error?: string; code?: string };
+    expect(body.code).toBe("insufficient_stock");
   });
 
   it("blocks moving a write-off before purchases exist", async () => {

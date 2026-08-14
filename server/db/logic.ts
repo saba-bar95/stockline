@@ -1,6 +1,12 @@
 import { s } from "./tables.ts";
 import { and, eq, gte, lt, sql, desc } from "drizzle-orm";
 import { db, qAll, qGet, qRun } from "./index.ts";
+import {
+  ERR,
+  insufficientStock,
+  insufficientStockNeed,
+  type ApiErrBody,
+} from "../errors.ts";
 const {
   expenses,
   payroll,
@@ -27,10 +33,6 @@ export function localDateYmd(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-export function todayLocal() {
-  return localDateYmd(new Date());
 }
 
 /** Round qty for error messages (avoids float noise like 0.544999…). */
@@ -514,7 +516,7 @@ export async function validateSaleUpdate(
   | {
       ok: false;
       conflict?: PurchaseTimelineConflict;
-      stockError?: string;
+      stockError?: ApiErrBody;
     }
 > {
   const existing = await qGet(
@@ -524,7 +526,7 @@ export async function validateSaleUpdate(
       .where(and(orgEq(sales.organizationId, orgId), eq(sales.id, saleId))),
   );
   if (!existing) {
-    return { ok: false, stockError: "არ მოიძებნა" };
+    return { ok: false, stockError: ERR.notFound };
   }
 
   const sameItem =
@@ -538,7 +540,7 @@ export async function validateSaleUpdate(
   if (available + 1e-9 < next.qty) {
     return {
       ok: false,
-      stockError: `არასაკმარისი ნაშთი (არის ${formatQty(available)})`,
+      stockError: insufficientStock(formatQty(available)),
     };
   }
 
@@ -774,7 +776,7 @@ export async function validateWriteOffUpdate(
   | {
       ok: false;
       conflict?: PurchaseTimelineConflict;
-      stockError?: string;
+      stockError?: ApiErrBody;
     }
 > {
   const existing = await qGet(
@@ -789,7 +791,7 @@ export async function validateWriteOffUpdate(
       ),
   );
   if (!existing) {
-    return { ok: false, stockError: "არ მოიძებნა" };
+    return { ok: false, stockError: ERR.notFound };
   }
 
   const sameItem =
@@ -809,7 +811,7 @@ export async function validateWriteOffUpdate(
   if (available + 1e-9 < next.qty) {
     return {
       ok: false,
-      stockError: `არასაკმარისი ნაშთი (არის ${formatQty(available)})`,
+      stockError: insufficientStock(formatQty(available)),
     };
   }
 
@@ -1082,7 +1084,7 @@ export async function validateProductionRunUpdate(
   | {
       ok: false;
       conflict?: PurchaseTimelineConflict;
-      stockError?: string;
+      stockError?: ApiErrBody;
     }
 > {
   const existing = await qGet(
@@ -1097,7 +1099,7 @@ export async function validateProductionRunUpdate(
       ),
   );
   if (!existing) {
-    return { ok: false, stockError: "არ მოიძებნა" };
+    return { ok: false, stockError: ERR.notFound };
   }
 
   const lines = await qAll(
@@ -1113,7 +1115,7 @@ export async function validateProductionRunUpdate(
   );
   const activeLines = lines.filter((line) => Number(line.qty) > 1e-12);
   if (activeLines.length === 0) {
-    return { ok: false, stockError: "შემადგენლობა არ არის" };
+    return { ok: false, stockError: ERR.noRecipe };
   }
 
   for (const line of activeLines) {
@@ -1127,7 +1129,11 @@ export async function validateProductionRunUpdate(
     if (have + 1e-9 < need) {
       return {
         ok: false,
-        stockError: `არასაკმარისი ნაშთი: ${line.ingredientId} (სჭირდება ${formatQty(need)}, არის ${formatQty(have)})`,
+        stockError: insufficientStockNeed(
+          line.ingredientId,
+          formatQty(need),
+          formatQty(have),
+        ),
       };
     }
     const purchasesRows = await purchaseRowsForItem(
@@ -1643,6 +1649,118 @@ export async function productionListEnriched(orgId: string) {
   );
 }
 
+export async function productionRunDetails(orgId: string, id: number) {
+  const run = await qGet(
+    db
+      .select()
+      .from(productionRuns)
+      .where(
+        and(
+          orgEq(productionRuns.organizationId, orgId),
+          eq(productionRuns.id, id),
+        ),
+      ),
+  );
+  if (!run) return null;
+
+  const product = await qGet(
+    db
+      .select()
+      .from(products)
+      .where(
+        and(
+          orgEq(products.organizationId, orgId),
+          eq(products.id, run.productId),
+        ),
+      ),
+  );
+
+  let usage = await qAll(
+    db
+      .select({
+        ingredientId: productionIngredientUsage.ingredientId,
+        qty: productionIngredientUsage.qty,
+      })
+      .from(productionIngredientUsage)
+      .where(
+        and(
+          orgEq(productionIngredientUsage.organizationId, orgId),
+          eq(productionIngredientUsage.runId, id),
+        ),
+      ),
+  );
+  if (usage.length === 0) {
+    const lines = await qAll(
+      db
+        .select()
+        .from(recipeLines)
+        .where(
+          and(
+            orgEq(recipeLines.organizationId, orgId),
+            eq(recipeLines.productId, run.productId),
+          ),
+        ),
+    );
+    usage = lines.map((line) => ({
+      ingredientId: line.ingredientId,
+      qty: line.qty * run.qty,
+    }));
+  }
+
+  const ingRows = await qAll(
+    db
+      .select()
+      .from(ingredients)
+      .where(eq(ingredients.organizationId, orgId)),
+  );
+  const ingById = Object.fromEntries(ingRows.map((i) => [i.id, i]));
+
+  const materials = [];
+  for (const u of usage) {
+    const ing = ingById[u.ingredientId];
+    const qtyUsed = Number(u.qty);
+    const unitCost = await avgIngredientCost(orgId, u.ingredientId);
+    materials.push({
+      ingredientId: u.ingredientId,
+      name: ing?.name ?? u.ingredientId,
+      unit: ing?.unit ?? "",
+      qty: qtyUsed,
+      unitCost,
+      total: unitCost * qtyUsed,
+    });
+  }
+  materials.sort((a, b) => a.name.localeCompare(b.name, "ka"));
+
+  const unitCost =
+    run.ingredientUnitCost > 0
+      ? run.ingredientUnitCost
+      : await recipeUnitCost(orgId, run.productId);
+  const ingredientCost = await runIngredientTotal(orgId, run);
+  const overheadCost = await runOverheadTotal(
+    orgId,
+    run.date,
+    run.productId,
+    run.qty,
+    run.id,
+  );
+
+  return {
+    run: {
+      id: run.id,
+      date: run.date,
+      productId: run.productId,
+      productName: product?.name ?? run.productId,
+      productUnit: product?.unit ?? "",
+      qty: run.qty,
+      unitCost,
+      ingredientCost,
+      overheadCost,
+      fullCost: ingredientCost + overheadCost,
+    },
+    materials,
+  };
+}
+
 /** Snapshotted usage rows + legacy recipe fallback for runs without snapshots. */
 async function ingredientUsedInProduction(
   orgId: string,
@@ -2082,8 +2200,25 @@ export async function runOverheadTotal(
       (r.productId === productId && Math.abs(r.qty - qty) < 1e-9),
   );
   if (!existing) dayG += thisG;
-  if (dayG <= 0) return 0;
-  return pool * (thisG / dayG);
+  if (dayG > 0) return pool * (thisG / dayG);
+
+  // Recipes with no material cost would otherwise drop the day's pool.
+  let dayQty = 0;
+  let thisQty = 0;
+  for (const r of runs) {
+    dayQty += r.qty;
+    if (runId != null && r.id === runId) thisQty = r.qty;
+    else if (
+      runId == null &&
+      r.productId === productId &&
+      Math.abs(r.qty - qty) < 1e-9
+    )
+      thisQty = r.qty;
+  }
+  if (thisQty <= 0) thisQty = qty;
+  if (!existing) dayQty += thisQty;
+  if (dayQty <= 0) return 0;
+  return pool * (thisQty / dayQty);
 }
 
 type ProductionRunRow = {
@@ -2269,8 +2404,12 @@ export class PlComputeCache {
     const pool = await this.dailyPoolCached(run.date);
     const dayG = await this.dayGTotal(run.date);
     const thisG = await this.runIngredientTotalCached(run);
-    if (dayG <= 0) return 0;
-    return pool * (thisG / dayG);
+    if (dayG > 0) return pool * (thisG / dayG);
+    await this.ensureRuns();
+    const runs = this.runsByDate.get(run.date) ?? [];
+    const dayQty = runs.reduce((sum, row) => sum + row.qty, 0);
+    if (dayQty <= 0) return 0;
+    return pool * (run.qty / dayQty);
   }
 
   async productQtyInCached(productId: string) {
@@ -2395,8 +2534,12 @@ export class PlComputeCache {
 
   async writeOffUnitCost(kind: string, itemId: string) {
     if (kind === "Ingredient") return await this.avgIngredientCostCached(itemId);
-    const full = await this.productFullUnitCostCached(itemId);
-    return full > 0 ? full : await this.avgResaleCostCached(itemId);
+    await this.ensureRuns();
+    await this.ensureRecipeLines();
+    if (this.runsByProduct.has(itemId) || this.recipeByProduct.has(itemId)) {
+      return await this.productFullUnitCostCached(itemId);
+    }
+    return await this.avgResaleCostCached(itemId);
   }
 
   async saleUnitCost(source: string, itemId: string) {
@@ -2488,21 +2631,6 @@ export class PlComputeCache {
   }
 }
 
-export async function productionIngredientCost(
-  orgId: string,
-  productId: string,
-  qty: number,
-): Promise<number> {
-  return (await recipeUnitCost(orgId, productId)) * qty;
-}
-export async function allocateOverheadForRun(
-  orgId: string,
-  date: string,
-  productId: string,
-  qty: number,
-): Promise<number> {
-  return await runOverheadTotal(orgId, date, productId, qty);
-}
 /** Excel product col E: if qtyIn=0 → recipe; else SUM(run G)/qtyIn */
 export async function productIngredientUnitCost(
   orgId: string,
@@ -2596,6 +2724,7 @@ export async function plSummary(
   cache?: PlComputeCache,
 ) {
   const c = cache ?? new PlComputeCache(orgId);
+  await c.ensureRuns();
   const revenue =
     (
       await qGet(

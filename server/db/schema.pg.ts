@@ -5,6 +5,7 @@ import {
   integer,
   timestamp,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /** Neon Postgres mirror of the SQLite multi-tenant schema. */
@@ -31,7 +32,7 @@ export const memberships = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => [index("memberships_user_idx").on(t.userId)],
+  (t) => [uniqueIndex("memberships_user_unique").on(t.userId)],
 );
 
 export const ingredients = pgTable(
@@ -189,6 +190,7 @@ export const employees = pgTable(
       .notNull()
       .references(() => organizations.id),
     name: text("name").notNull(),
+    position: text("position").notNull().default(""),
     dailyRate: real("daily_rate").notNull().default(0),
     status: text("status").notNull().default("აქტიური"),
   },
