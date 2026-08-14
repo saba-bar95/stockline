@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, money, qty } from "../lib/api";
+import { api, formatApiError, money, qty } from "../lib/api";
 import { movementLabel, unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { DataTable } from "./DataTable";
@@ -47,7 +47,7 @@ export function IngredientHistoryModal({ ingredientId, onClose }: Props) {
     setErr("");
     api<HistoryPayload>(`/ingredients/${ingredientId}/history`)
       .then(setData)
-      .catch((e) => setErr(e instanceof Error ? e.message : t("common.error")));
+      .catch((e) => setErr(formatApiError(e, t)));
   }, [ingredientId, t]);
 
   const ing = data?.ingredient;

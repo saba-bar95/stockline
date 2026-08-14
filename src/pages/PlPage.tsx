@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DataTable, type Column } from "../components/DataTable";
 import { Modal } from "../components/Modal";
 import { LoadingState, PageHeader, Surface } from "../components/ui";
-import { api, money, qty } from "../lib/api";
+import { api, formatApiError, money, qty } from "../lib/api";
 import { cn } from "../lib/cn";
 import { usePrefs } from "../preferences/PreferencesContext";
 
@@ -169,8 +169,8 @@ function PlDetailModal({
     setSelectedDay(null);
     api<PlDetails>(`/pl/details?period=${period}`)
       .then(setDetail)
-      .catch((e) => setErr(e instanceof Error ? e.message : String(e)));
-  }, [open, period]);
+      .catch((e) => setErr(formatApiError(e, t)));
+  }, [open, period, t]);
 
   const s = detail?.summary;
   const activeDays =
@@ -465,8 +465,8 @@ export function PlPage() {
   useEffect(() => {
     api<Pl>("/pl")
       .then((raw) => setData(normalizePl(raw)))
-      .catch((e) => setErr(e.message));
-  }, []);
+      .catch((e) => setErr(formatApiError(e, t)));
+  }, [t]);
 
   const periodLabels: Record<PlPeriod, string> = {
     day: t("pl.today"),

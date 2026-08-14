@@ -117,6 +117,7 @@ export const en: Messages = {
     status: "Status",
     dailyRate: "Daily rate",
     dailyRateShort: "Rate",
+    position: "Position",
     pickDate: "Pick a date",
     today: "Today",
     clear: "Clear",
@@ -147,6 +148,7 @@ export const en: Messages = {
     kitchenName: "Organization name",
     saveName: "Save",
     account: "Account",
+    howItWorks: "How it works",
   },
   table: {
     empty: "No data",
@@ -210,6 +212,11 @@ export const en: Messages = {
     categoryHint:
       "Full category name (e.g. Dairy). ID is generated automatically.",
     categoryRequired: "Please select a category",
+    unitCaution:
+      "This material already has operations. Changing the unit does not convert quantities — update related purchases, production, recipes, and write-offs.",
+    unitChangeTitle: "Change unit?",
+    unitChangeConfirm:
+      "Existing quantities stay as they are. Update connected operations so history and stock still match this unit.",
     deleteTitle: "Delete material",
     deleteConfirm: "Delete “{name}”? This cannot be undone.",
     deleteBlocked: "Cannot delete — operations already exist",
@@ -257,6 +264,11 @@ export const en: Messages = {
     deleteTitle: "Delete product",
     deleteConfirm: "Delete “{name}”? This cannot be undone.",
     deleteBlocked: "Cannot delete — operations already exist",
+    unitCaution:
+      "This product already has operations. Changing the unit does not convert quantities — update related production, sales, and write-offs.",
+    unitChangeTitle: "Change unit?",
+    unitChangeConfirm:
+      "Existing quantities stay as they are. Update connected operations so history and stock still match this unit.",
     qtyIn: "Produced",
     ingPerUnit: "Mat./unit",
     ingPerUnitFull: "Material cost per unit",
@@ -328,7 +340,7 @@ export const en: Messages = {
   production: {
     title: "Production",
     description:
-      "Daily runs — materials drop by composition; overhead is allocated from that day’s pool.",
+      "Daily runs — click a row for materials used. Materials drop by composition; that day’s overhead pool is split across runs.",
     newTitle: "New production run",
     editTitle: "Edit production run",
     deleteTitle: "Delete production run",
@@ -343,6 +355,10 @@ export const en: Messages = {
     overheadFull: "Allocated overhead",
     fullCost: "Full cost",
     fullCostFull: "Full cost of goods",
+    detailTitle: "Production details",
+    detailTitleNamed: "{name} — {date}",
+    materialsUsed: "Materials used",
+    emptyMaterials: "No materials recorded for this run",
   },
   sales: {
     title: "Sales",
@@ -376,14 +392,20 @@ export const en: Messages = {
   hr: {
     title: "Payroll",
     description:
-      "Wages feed the daily overhead pool and get allocated onto production.",
+      "Wages feed the daily overhead pool and get allocated onto production. Employee daily rate is a reminder — only a payroll row posts cost. You can edit employees (including active/inactive) and payroll entries.",
     employees: "Employees",
     newEmployee: "New employee",
     addEmployee: "Add employee",
+    editEmployee: "Edit employee",
     payroll: "Payroll entries",
     payrollTitle: "Payroll",
     addPayroll: "Add payroll",
+    editPayroll: "Edit payroll",
+    deletePayroll: "Delete payroll",
+    deletePayrollConfirm:
+      "Delete this payroll entry? That day’s overhead and production costs will be recalculated.",
     statusActive: "Active",
+    statusInactive: "Inactive",
   },
   expenses: {
     title: "Expenses",
@@ -394,6 +416,114 @@ export const en: Messages = {
     typeRent: "Rent",
     typeUtilities: "Utilities",
     typeOther: "Other",
+  },
+  guide: {
+    title: "How Stockline works",
+    open: "How it works",
+    secFlow: "The flow",
+    secPages: "Pages",
+    secEdit: "What you can edit",
+    secCosts: "How costs are built",
+    secPl: "How P&L is calculated",
+    secRules: "Rules that block a save",
+    flow1:
+      "Each signed-in organization only sees its own data. Materials and merchandise come in through purchases. Manufactured products are made from compositions (recipes): production consumes materials and creates finished stock. Sales and write-offs take stock out.",
+    flow2:
+      "Payroll entries and expenses feed a daily overhead pool. On a day you produce, that pool is baked into that day’s production cost. On a day you do not produce, the same pool hits profit as unallocated overhead — it is not carried forward.",
+    flow3:
+      "Typical order: add materials and compositions → purchase stock → record production → sell or write off. Payroll and rent can be entered whenever; they affect the dates you assign them.",
+    flow4:
+      "Merchandise skips production: you buy it and sell it as-is. Its unit cost is the average purchase price, with no production overhead.",
+    pagesIntro:
+      "Use the sidebar to move between these areas. Counts on the menu are for your organization only.",
+    pagePl:
+      "Today, this week, this month, and last month. Click a card for a day-by-day breakdown and that day’s sales. Net profit is the headline; overhead on the card is the full daily pool, not an extra subtraction on top of COGS.",
+    pageIngredients:
+      "Raw materials: stock, average purchase price, last buy. Click a row for movement history (purchase, production use, write-off). Edit name, unit, and category. A unit change does not convert old quantities.",
+    pageResale:
+      "Finished goods you buy and sell unchanged. History is purchase, sale, and write-off. Unit cost is average purchase price.",
+    pageProducts:
+      "Items you make in-house. Columns show material cost per unit, allocated overhead, full unit cost, and stock value. Click a row for production / sale / write-off history. Full unit cost is a live average of all production runs.",
+    pageRecipes:
+      "Bill of materials for one unit of a product. Production uses the current composition. A material already used in that product’s production cannot be deleted — nullify it so old runs keep their snapshots.",
+    pagePurchases:
+      "Materials or merchandise coming in. Date, item, quantity, and unit price. A purchase cannot be moved after stock was already used (production, sale, or write-off) in a way that would go negative.",
+    pageProduction:
+      "Daily runs. Click a row to see materials used. Overhead for that date is split across runs by each run’s material cost. Edit or delete only if later sales/write-offs still leave enough product stock.",
+    pageSales:
+      "Manufactured products or merchandise. Needs enough stock and a date on or after the goods existed (production or purchase).",
+    pageWriteOffs:
+      "Spoilage or loss. Uses the same stock and date rules as sales. Deleting a write-off restores stock and removes that loss from P&L.",
+    pageHr:
+      "Employees (name, position, daily rate, active/inactive) and payroll entries (date, person, amount). The daily rate is a reminder only — it does not post itself. Only active employees appear when you add payroll. Editing or deleting a payroll row recalculates that day’s overhead and any production cost on that day.",
+    pageExpenses:
+      "Rent and utilities are spread across every day of that calendar month. Other expenses sit in the pool on their own date. Wages belong on Payroll, not here.",
+    edit1:
+      "Most lists have Edit on the row (or click the row). You can change names, units, dates, quantities, prices, payroll amount/date/employee, and employee position and status.",
+    edit2:
+      "Changing a material or product unit does not convert history — old quantities stay as stored numbers under the new label. Confirm if that item already has operations.",
+    edit3:
+      "Purchases, production, sales, write-offs, and payroll are live: saving recalculates stock, average costs, production overhead, and P&L. There is no separate “rebuild” step.",
+    edit4:
+      "You cannot delete a material, product, or merchandise item that already has operations. Compositions used in production can be nullified, not removed.",
+    edit5:
+      "Inactive employees stay in the list and on old payroll rows, but they cannot be selected for a new payroll entry. You can still correct an old row that already belongs to them.",
+    costs1:
+      "Material average cost = sum of purchase totals ÷ sum of purchase quantities (for that material).",
+    costs2:
+      "A production run snapshots material unit cost at save time. Later purchase-price changes do not rewrite that run’s material total. Overhead is not snapshotted — it always uses the current daily pool for that run’s date.",
+    costs3:
+      "Daily overhead pool = payroll on that date + other expenses on that date + (rent + utilities in that calendar month) ÷ days in the month.",
+    costs4:
+      "If several runs share a date, the pool is split by material-cost weight: this run’s material total ÷ the day’s material total. If material cost is zero that day, the pool is split by quantity so wages are not dropped.",
+    costs5:
+      "Product full unit cost = average of (material + overhead) across all of that product’s runs. Sold and written-off units use this live average, so editing past payroll or expenses on a production day updates COGS.",
+    costs6:
+      "Unsold production keeps allocated overhead in stock value (inventory), not in net profit. Merchandise never receives production overhead.",
+    pl1:
+      "Net = revenue − COGS − write-off cost − unallocated overhead.",
+    pl2:
+      "Revenue is sales (quantity × sale price). COGS is quantity sold × current unit cost (full manufactured cost, or average merchandise purchase cost).",
+    pl3:
+      "Allocated overhead is already inside manufactured COGS for units you sold. Do not subtract the full overhead line again — the card shows the pool for context, and only Unallocated is taken out of net.",
+    pl4:
+      "Unallocated overhead is the daily pool on days with no production. It hits that period’s profit immediately.",
+    pl5:
+      "Write-offs use the same unit costs as stock (materials at average buy price; manufactured goods at full unit cost; merchandise at average buy price).",
+    rules1:
+      "You cannot sell, write off, or produce more than available stock (edit windows credit the row you are changing).",
+    rules2:
+      "Purchases must sit on or before later usage. You cannot sell a manufactured product before it was produced, or merchandise before it was purchased.",
+    rules3:
+      "Production needs a composition with at least one material line above zero.",
+    rules4:
+      "Dates must be YYYY-MM-DD. Invalid units and missing categories are rejected. API errors follow the language you selected.",
+    rules5:
+      "Each organization is isolated. Export downloads only your kitchen’s data.",
+  },
+  errors: {
+    notFound: "Not found",
+    noRecipe: "No composition",
+    invalidUnit: "Invalid unit",
+    invalidId: "Invalid id",
+    invalidRequest: "Invalid request",
+    invalidQuery: "Invalid query",
+    invalidProductOrIngredient: "Invalid product or material",
+    employeeNotFound: "Employee not found",
+    employeeInactive: "Inactive employees cannot be added to payroll",
+    failedProduction: "Failed to record production",
+    tooManyRequests: "Too many requests",
+    payloadTooLarge: "Request is too large",
+    timeout: "The request took too long",
+    misconfigured: "Server is misconfigured",
+    unknownExport: "Unknown export entity",
+    unauthorized: "Unauthorized",
+    serverError: "Something went wrong",
+    cannotReach: "Cannot reach API — is the server running?",
+    exportFailed: "Export failed",
+    insufficientStock: "Insufficient stock (available {stock})",
+    insufficientStockNeed:
+      "Insufficient stock: {itemId} (need {need}, available {have})",
   },
   units: {
     kg: "kg",

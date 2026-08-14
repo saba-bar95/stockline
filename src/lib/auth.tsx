@@ -7,9 +7,11 @@ import {
 } from "@clerk/clerk-react";
 import {
   createContext,
+  Fragment,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 import {
@@ -23,7 +25,7 @@ import {
 import { CustomSignInForm, CustomSignUpForm } from "../components/AuthForms";
 import { AuthHero, AuthScene } from "../components/AuthScene";
 import { BrandMark } from "../components/BrandMark";
-import { parseLocale } from "./api";
+import { parseLocale, invalidateApiCache } from "./api";
 import {
   clerkAppearance,
   clerkLocalization,
@@ -66,7 +68,7 @@ function LocalTokenBridge({ children }: { children: ReactNode }) {
 
 function localeFromPath(pathname: string): Locale {
   const seg = pathname.split("/").filter(Boolean)[0];
-  return parseLocale(seg) ?? "ka";
+  return parseLocale(seg) ?? "en";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -94,18 +96,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { locale: param } = useParams();
-  const locale = parseLocale(param) ?? "ka";
+  const locale = parseLocale(param) ?? "en";
 
   if (!clerkEnabled) return children;
 
   return (
     <>
-      <SignedIn>{children}</SignedIn>
+      <SignedIn>
+        <SessionCacheGate>{children}</SessionCacheGate>
+      </SignedIn>
       <SignedOut>
         <Navigate to={`/${locale}/sign-in`} replace />
       </SignedOut>
     </>
   );
+}
+
+function SessionCacheGate({ children }: { children: ReactNode }) {
+  const { userId, orgId } = useAuth();
+  const sessionKey = `${userId ?? ""}:${orgId ?? ""}`;
+  const prevKey = useRef(sessionKey);
+
+  useEffect(() => {
+    if (prevKey.current !== sessionKey) {
+      invalidateApiCache();
+      prevKey.current = sessionKey;
+    }
+  }, [sessionKey]);
+
+  return <Fragment key={sessionKey}>{children}</Fragment>;
 }
 
 function AuthLocaleSwitch({
@@ -299,7 +318,7 @@ function MoonIcon({ className }: { className?: string }) {
 
 export function AuthPageLayout() {
   const { locale: param } = useParams();
-  const locale = parseLocale(param) ?? "ka";
+  const locale = parseLocale(param) ?? "en";
   const location = useLocation();
   const mode = location.pathname.endsWith("/sign-up") ? "sign-up" : "sign-in";
 
@@ -314,13 +333,13 @@ export function AuthPageLayout() {
 
 export function SignInPage() {
   const { locale: param } = useParams();
-  const locale = parseLocale(param) ?? "ka";
+  const locale = parseLocale(param) ?? "en";
   return <CustomSignInForm locale={locale} />;
 }
 
 export function SignUpPage() {
   const { locale: param } = useParams();
-  const locale = parseLocale(param) ?? "ka";
+  const locale = parseLocale(param) ?? "en";
   return <CustomSignUpForm locale={locale} />;
 }
 

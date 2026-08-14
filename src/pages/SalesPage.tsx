@@ -5,7 +5,7 @@ import { DataTable } from "../components/DataTable";
 import { Modal } from "../components/Modal";
 import { ModalForm } from "../components/ModalForm";
 import { SelectField } from "../components/SelectField";
-import { Button, PageHeader, Surface } from "../components/ui";
+import { Button, PageHeader, Spinner, Surface } from "../components/ui";
 import { unitLabel } from "../i18n";
 import { api, formatApiError, money, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -29,43 +29,47 @@ function useItemStock(
   creditQty = 0,
   enabled = true,
 ) {
-  const [stock, setStock] = useState<number | null>(null);
-  const [unitCost, setUnitCost] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+  const key = enabled && itemId ? `${source}:${itemId}:${creditQty}` : "";
+  const [data, setData] = useState<{
+    key: string;
+    stock: number | null;
+    unitCost: number | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (!enabled || !itemId) {
-      setStock(null);
-      setUnitCost(null);
-      setLoading(false);
+    if (!key) {
+      setData(null);
       return;
     }
     let cancelled = false;
-    setLoading(true);
     api<{ stock: number; unitCost: number }>(
       `/item-stock?source=${encodeURIComponent(source)}&itemId=${encodeURIComponent(itemId)}`,
     )
       .then((r) => {
         if (!cancelled) {
-          setStock(r.stock + creditQty);
-          setUnitCost(r.unitCost);
+          setData({
+            key,
+            stock: r.stock + creditQty,
+            unitCost: r.unitCost,
+          });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setStock(null);
-          setUnitCost(null);
+          setData({ key, stock: null, unitCost: null });
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [source, itemId, creditQty, enabled]);
+  }, [key, source, itemId, creditQty]);
 
-  return { stock, unitCost, loading };
+  const ready = data?.key === key;
+  return {
+    stock: ready ? data.stock : null,
+    unitCost: ready ? data.unitCost : null,
+    loading: Boolean(key) && !ready,
+  };
 }
 
 export function SalesPage() {
@@ -153,23 +157,29 @@ export function SalesPage() {
     loadingStock: boolean,
     unit?: string,
   ) {
-    const qtyText = loadingStock
-      ? "…"
-      : available == null
+    const qtyText =
+      available == null
         ? "—"
         : `${qty(available, numberLocale)}${
             unit ? ` ${unitLabel(locale, unit)}` : ""
           }`;
-    const costText = loadingStock
-      ? "…"
-      : unitCost == null
-        ? "—"
-        : money(unitCost, numberLocale);
+    const costText = unitCost == null ? "—" : money(unitCost, numberLocale);
+    const spin = <Spinner size="hint" />;
     return (
-      <p className="text-xs font-normal text-ink-muted">
-        {t("sales.inStock", { qty: qtyText })}
-        <span className="mx-1.5 text-line-strong">·</span>
-        {t("sales.unitCost", { cost: costText })}
+      <p
+        className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[13px] font-normal text-ink-muted"
+        role="status"
+        aria-busy={loadingStock}
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <span>{t("sales.inStock", { qty: "" }).trimEnd()}</span>
+          {loadingStock ? spin : <span>{qtyText}</span>}
+        </span>
+        <span className="text-line-strong">·</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span>{t("sales.unitCost", { cost: "" }).trimEnd()}</span>
+          {loadingStock ? spin : <span>{costText}</span>}
+        </span>
       </p>
     );
   }

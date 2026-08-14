@@ -6,6 +6,7 @@ import { AuthGlassCard } from "./AuthScene";
 import type { Locale } from "../i18n";
 import { cn } from "../lib/cn";
 import {
+  clearOAuthIntent,
   markOAuthIntent,
   OAUTH_ERROR_PARAM,
   type OAuthErrorCode,
@@ -25,6 +26,31 @@ function primaryBtn(busy: boolean) {
 
 function secondaryBtn() {
   return "btn-press mt-2 flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-panel text-sm font-medium text-ink hover:border-teal hover:bg-teal-soft/40";
+}
+
+/** After Google redirect/back, BFCache can restore busy=true and leave buttons dead. */
+function useUnlockAfterExternalAuth(setBusy: (v: boolean) => void) {
+  useEffect(() => {
+    function unlock() {
+      setBusy(false);
+    }
+    function onPageShow(e: PageTransitionEvent) {
+      unlock();
+      // Browser back from Google restores this page from BFCache.
+      if (e.persisted) clearOAuthIntent();
+    }
+    function onVisible() {
+      if (document.visibilityState === "visible") unlock();
+    }
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", unlock);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", unlock);
+    };
+  }, [setBusy]);
 }
 
 function oauthErrorMessage(
@@ -120,6 +146,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const oauthError = useOAuthErrorParam();
+  useUnlockAfterExternalAuth(setBusy);
 
   useEffect(() => {
     if (oauthError) setError(oauthError);
@@ -149,6 +176,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
         redirectUrlComplete: `${window.location.origin}/${locale}/sso-callback?step=verify`,
       });
     } catch (e) {
+      clearOAuthIntent();
       setError(errMsg(e));
       setBusy(false);
     }
@@ -156,6 +184,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
 
   async function sendEmailCode() {
     if (!isLoaded || !signIn) return;
+    clearOAuthIntent();
     setError("");
     setBusy(true);
     try {
@@ -218,18 +247,20 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
       setError(t("auth.errEnterCredentials"));
       return;
     }
+    clearOAuthIntent();
     setError("");
     setBusy(true);
     try {
-      await signIn.create({ identifier: email.trim() });
-      const hasPassword = signIn.supportedFirstFactors?.some(
+      // Fresh SignIn — abandoned Google OAuth leaves a stale attempt.
+      const created = await signIn.create({ identifier: email.trim() });
+      const hasPassword = created.supportedFirstFactors?.some(
         (f) => f.strategy === "password",
       );
       if (!hasPassword) {
         setError(t("auth.errNoPassword"));
         return;
       }
-      const res = await signIn.attemptFirstFactor({
+      const res = await created.attemptFirstFactor({
         strategy: "password",
         password,
       });
@@ -266,6 +297,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   async function startForgot(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signIn) return;
+    clearOAuthIntent();
     setError("");
     setBusy(true);
     try {
@@ -362,8 +394,10 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
             type="button"
             disabled={busy}
             onClick={() => {
+              clearOAuthIntent();
               setError("");
               setPassword("");
+              setBusy(false);
               setStep("password");
             }}
             className={secondaryBtn()}
@@ -424,8 +458,10 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
             <input
               className={fieldClass()}
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("auth.emailPh")}
               required
             />
           </label>
@@ -480,6 +516,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("auth.emailPh")}
               required
             />
           </label>
@@ -586,6 +623,7 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const oauthError = useOAuthErrorParam();
+  useUnlockAfterExternalAuth(setBusy);
 
   useEffect(() => {
     if (oauthError) setError(oauthError);
@@ -603,6 +641,7 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
         redirectUrlComplete: `${window.location.origin}/${locale}/sso-callback?step=verify`,
       });
     } catch (e) {
+      clearOAuthIntent();
       setError(errMsg(e));
       setBusy(false);
     }
@@ -615,6 +654,7 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
       setError(t("auth.errPasswordMismatch"));
       return;
     }
+    clearOAuthIntent();
     setError("");
     setBusy(true);
     try {

@@ -8,6 +8,7 @@ import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
 import { api, formatApiError, money, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
+import { canonicalUnit, sameUnit } from "../lib/units";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { usePageCount } from "../preferences/CountsContext";
 
@@ -47,6 +48,7 @@ export function IngredientsPage() {
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
+  const [pendingUnitChange, setPendingUnitChange] = useState(false);
 
   const pageCount = usePageCount("ingredients", loading ? null : rows.length);
   const load = useCallback(async () => {
@@ -86,11 +88,12 @@ export function IngredientsPage() {
   function openEdit(row: Row) {
     setEditing(row);
     setEditName(row.name);
-    setEditUnit(row.unit);
+    setEditUnit(canonicalUnit(row.unit) ?? row.unit);
     setEditCategory(row.category);
     setEditErr("");
     setDeleteErr("");
     setPendingDelete(null);
+    setPendingUnitChange(false);
   }
 
   function closeEdit() {
@@ -98,10 +101,11 @@ export function IngredientsPage() {
     setEditing(null);
     setEditErr("");
     setPendingDelete(null);
+    setPendingUnitChange(false);
     setDeleteErr("");
   }
 
-  async function saveEdit() {
+  async function saveEdit(confirmedUnitChange = false) {
     if (!editing || editBusy || deleting) return;
     const trimmedName = editName.trim();
     const trimmedCategory = editCategory.trim();
@@ -113,6 +117,20 @@ export function IngredientsPage() {
       setEditErr(t("ingredients.categoryRequired"));
       return;
     }
+    const nextUnit = canonicalUnit(editUnit) ?? editUnit.trim();
+    if (!nextUnit) {
+      setEditErr(t("common.formInvalid"));
+      return;
+    }
+    if (
+      !sameUnit(editing.unit, nextUnit) &&
+      editing.canDelete === false &&
+      !confirmedUnitChange
+    ) {
+      setPendingUnitChange(true);
+      return;
+    }
+    setPendingUnitChange(false);
     setEditBusy(true);
     setEditErr("");
     try {
@@ -120,7 +138,7 @@ export function IngredientsPage() {
         method: "PATCH",
         body: JSON.stringify({
           name: trimmedName,
-          unit: editUnit,
+          unit: nextUnit,
           category: trimmedCategory,
         }),
       });
@@ -188,6 +206,7 @@ export function IngredientsPage() {
                 value={unit}
                 onChange={setUnit}
                 searchable={false}
+                required
                 options={UNIT_OPTIONS.map((o) => ({
                   value: o.value,
                   label: t(o.labelKey),
@@ -304,7 +323,7 @@ export function IngredientsPage() {
         title={t("ingredients.editTitle")}
         open={Boolean(editing)}
         onClose={closeEdit}
-        listenKeys={!pendingDelete}
+        listenKeys={!pendingDelete && !pendingUnitChange}
       >
         <form
           noValidate
@@ -333,11 +352,24 @@ export function IngredientsPage() {
               value={editUnit}
               onChange={setEditUnit}
               searchable={false}
-              options={UNIT_OPTIONS.map((o) => ({
-                value: o.value,
-                label: t(o.labelKey),
-              }))}
+              required
+              options={[
+                ...UNIT_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: t(o.labelKey),
+                })),
+                ...(editUnit &&
+                !UNIT_OPTIONS.some((o) => o.value === editUnit)
+                  ? [{ value: editUnit, label: unitLabel(locale, editUnit) }]
+                  : []),
+              ]}
             />
+            {editing?.canDelete === false &&
+            !sameUnit(editing.unit, editUnit) ? (
+              <p className="mt-1.5 text-xs text-amber">
+                {t("ingredients.unitCaution")}
+              </p>
+            ) : null}
           </div>
           <div className="field">
             <span>{t("common.category")}</span>
@@ -391,6 +423,17 @@ export function IngredientsPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        open={pendingUnitChange}
+        stacked
+        title={t("ingredients.unitChangeTitle")}
+        message={t("ingredients.unitChangeConfirm")}
+        confirmLabel={t("common.save")}
+        confirmVariant="primary"
+        onCancel={() => setPendingUnitChange(false)}
+        onConfirm={() => void saveEdit(true)}
+      />
 
       <ConfirmModal
         open={Boolean(pendingDelete)}

@@ -5,6 +5,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { setApiBusyListener } from "../lib/api";
+import { lockBodyScroll, unlockBodyScroll } from "../lib/bodyScrollLock";
 import { useT } from "../preferences/PreferencesContext";
 import { Spinner } from "./ui";
 
@@ -21,8 +22,7 @@ export function BusyOverlayProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (pending <= 0) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     const block = (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
@@ -31,7 +31,7 @@ export function BusyOverlayProvider({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", block, true);
     window.addEventListener("keyup", block, true);
     return () => {
-      document.body.style.overflow = prev;
+      unlockBodyScroll();
       window.removeEventListener("keydown", block, true);
       window.removeEventListener("keyup", block, true);
     };
@@ -43,7 +43,7 @@ export function BusyOverlayProvider({ children }: { children: ReactNode }) {
       {pending > 0
         ? createPortal(
             <div
-              className="fixed inset-0 z-[200] flex cursor-wait items-center justify-center bg-ink/45 backdrop-blur-[2px]"
+              className="fixed inset-0 z-200 flex cursor-wait items-center justify-center bg-ink/45 backdrop-blur-[2px]"
               role="alertdialog"
               aria-busy="true"
               aria-live="assertive"
@@ -54,7 +54,7 @@ export function BusyOverlayProvider({ children }: { children: ReactNode }) {
               }}
             >
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-line bg-panel px-8 py-7 shadow-2xl">
-                <Spinner className="size-8 border-[3px]" />
+                <Spinner size="xl" />
                 <p className="text-sm font-medium tracking-wide text-ink-soft">
                   {t("common.saving")}
                 </p>

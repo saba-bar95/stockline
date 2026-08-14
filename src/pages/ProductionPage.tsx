@@ -4,6 +4,7 @@ import { DateField } from "../components/DateField";
 import { DataTable } from "../components/DataTable";
 import { Modal } from "../components/Modal";
 import { ModalForm } from "../components/ModalForm";
+import { ProductionDetailModal } from "../components/ProductionDetailModal";
 import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
 import { api, formatApiError, money, qty, today } from "../lib/api";
@@ -41,6 +42,7 @@ export function ProductionPage() {
   const [pendingDelete, setPendingDelete] = useState<Run | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -177,6 +179,7 @@ export function ProductionPage() {
           rows={rows}
           loading={loading}
           rowKey={(r) => r.id}
+          onRowClick={(r) => setDetailId(r.id)}
           defaultSortKey="date"
           defaultSortDir="desc"
           columns={[
@@ -360,6 +363,11 @@ export function ProductionPage() {
           setDeleteErr("");
         }}
         onConfirm={() => void confirmDelete()}
+      />
+
+      <ProductionDetailModal
+        runId={detailId}
+        onClose={() => setDetailId(null)}
       />
     </>
   );

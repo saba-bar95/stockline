@@ -25,7 +25,7 @@ export function SsoCallbackPage() {
   const { signUp } = useSignUp();
   const navigate = useNavigate();
   const { locale: param } = useParams();
-  const locale = parseLocale(param) ?? "ka";
+  const locale = parseLocale(param) ?? "en";
   const [searchParams] = useSearchParams();
   const step = searchParams.get("step");
   const started = useRef(false);
@@ -37,13 +37,17 @@ export function SsoCallbackPage() {
     const verifyUrl = `/${locale}/sso-callback?step=verify`;
 
     if (step !== "verify") {
-      void clerk.handleRedirectCallback({
-        transferable: false,
-        signInForceRedirectUrl: verifyUrl,
-        signUpForceRedirectUrl: verifyUrl,
-        signInFallbackRedirectUrl: `/${locale}/sign-in`,
-        signUpFallbackRedirectUrl: `/${locale}/sign-up`,
-      });
+      void clerk
+        .handleRedirectCallback({
+          transferable: false,
+          signInForceRedirectUrl: verifyUrl,
+          signUpForceRedirectUrl: verifyUrl,
+          signInFallbackRedirectUrl: `/${locale}/sign-in`,
+          signUpFallbackRedirectUrl: `/${locale}/sign-up`,
+        })
+        .catch(() => {
+          redirectWithError(navigate, locale, "oauth_failed", "sign-in");
+        });
       return;
     }
 

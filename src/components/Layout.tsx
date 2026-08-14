@@ -8,8 +8,10 @@ import {
   useCounts,
 } from "../preferences/CountsContext";
 import { usePrefs } from "../preferences/PreferencesContext";
+import { HowItWorksModal } from "./HowItWorksModal";
 import { SettingsPanel } from "./SettingsPanel";
 import { BrandMark } from "./BrandMark";
+import { lockBodyScroll, unlockBodyScroll } from "../lib/bodyScrollLock";
 
 export function Layout() {
   return (
@@ -24,6 +26,12 @@ function LayoutShell() {
   const location = useLocation();
   const { counts, countsReady } = useCounts();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  function openGuide() {
+    setMenuOpen(false);
+    setGuideOpen(true);
+  }
 
   useEffect(() => {
     setMenuOpen(false);
@@ -31,14 +39,13 @@ function LayoutShell() {
 
   useEffect(() => {
     if (!menuOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setMenuOpen(false);
     }
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = prev;
+      unlockBodyScroll();
       window.removeEventListener("keydown", onKey);
     };
   }, [menuOpen]);
@@ -142,7 +149,15 @@ function LayoutShell() {
           </nav>
 
           <div className="mt-3 shrink-0 space-y-1 border-t border-white/10 pt-3">
-            <SettingsPanel />
+            <button
+              type="button"
+              onClick={openGuide}
+              className="btn-press flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-[0.95rem] font-medium text-white/65 hover:bg-sidebar-hover hover:text-white"
+            >
+              <HelpIcon className="size-[1.15rem] shrink-0 opacity-90" />
+              <span>{t("guide.open")}</span>
+            </button>
+            <SettingsPanel onOpenGuide={openGuide} closeSignal={guideOpen} />
             <SidebarAccount />
           </div>
         </div>
@@ -159,7 +174,7 @@ function LayoutShell() {
           >
             <BurgerIcon className="size-5" />
           </button>
-          <p className="font-display text-lg font-semibold tracking-tight">
+          <p className="font-display min-w-0 flex-1 text-lg font-semibold tracking-tight">
             <span className="inline-flex items-center gap-2">
               <BrandMark className="size-7" />
               <span className="bg-linear-to-r from-teal-deep via-teal to-amber bg-clip-text text-transparent uppercase">
@@ -167,6 +182,14 @@ function LayoutShell() {
               </span>
             </span>
           </p>
+          <button
+            type="button"
+            className="btn-press cursor-pointer rounded-lg border border-line bg-panel p-2.5 text-ink shadow-sm"
+            aria-label={t("guide.open")}
+            onClick={openGuide}
+          >
+            <HelpIcon className="size-5" />
+          </button>
         </header>
 
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -178,6 +201,8 @@ function LayoutShell() {
           </div>
         </main>
       </div>
+
+      <HowItWorksModal open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }
@@ -208,6 +233,22 @@ function BurgerIcon({ className }: { className?: string }) {
       aria-hidden
     >
       <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function HelpIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path strokeLinecap="round" d="M12 17h.01M9.5 9.5a2.5 2.5 0 1 1 3.4 2.32c-.7.28-1.4.78-1.4 1.68V14" />
     </svg>
   );
 }

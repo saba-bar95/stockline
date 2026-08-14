@@ -30,11 +30,11 @@ function storedLocale(): Locale {
       localStorage.getItem("stockline-prefs") ||
       localStorage.getItem("mise-prefs") ||
       localStorage.getItem("mza-prefs");
-    if (!raw) return "ka";
+    if (!raw) return "en";
     const parsed = JSON.parse(raw) as { locale?: string };
-    return parsed.locale === "en" ? "en" : "ka";
+    return parsed.locale === "ka" ? "ka" : "en";
   } catch {
-    return "ka";
+    return "en";
   }
 }
 

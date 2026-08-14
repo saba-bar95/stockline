@@ -5,7 +5,7 @@ import { DataTable } from "../components/DataTable";
 import { Modal } from "../components/Modal";
 import { ModalForm } from "../components/ModalForm";
 import { SelectField } from "../components/SelectField";
-import { Button, PageHeader, Surface } from "../components/ui";
+import { Button, PageHeader, Spinner, Surface } from "../components/ui";
 import { unitLabel } from "../i18n";
 import { api, formatApiError, qty, today } from "../lib/api";
 import { usePrefs } from "../preferences/PreferencesContext";
@@ -38,35 +38,37 @@ function useItemStock(
   creditQty = 0,
   enabled = true,
 ) {
-  const [stock, setStock] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+  const key = enabled && itemId ? `${source}:${itemId}:${creditQty}` : "";
+  const [data, setData] = useState<{
+    key: string;
+    stock: number | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (!enabled || !itemId) {
-      setStock(null);
-      setLoading(false);
+    if (!key) {
+      setData(null);
       return;
     }
     let cancelled = false;
-    setLoading(true);
     api<{ stock: number }>(
       `/item-stock?source=${encodeURIComponent(source)}&itemId=${encodeURIComponent(itemId)}`,
     )
       .then((r) => {
-        if (!cancelled) setStock(r.stock + creditQty);
+        if (!cancelled) setData({ key, stock: r.stock + creditQty });
       })
       .catch(() => {
-        if (!cancelled) setStock(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setData({ key, stock: null });
       });
     return () => {
       cancelled = true;
     };
-  }, [source, itemId, creditQty, enabled]);
+  }, [key, source, itemId, creditQty]);
 
-  return { stock, loading };
+  const ready = data?.key === key;
+  return {
+    stock: ready ? data.stock : null,
+    loading: Boolean(key) && !ready,
+  };
 }
 
 export function WriteOffsPage() {
@@ -159,16 +161,24 @@ export function WriteOffsPage() {
     loadingStock: boolean,
     unit?: string,
   ) {
-    const qtyText = loadingStock
-      ? "…"
-      : available == null
+    const qtyText =
+      available == null
         ? "—"
         : `${qty(available, numberLocale)}${
             unit ? ` ${unitLabel(locale, unit)}` : ""
           }`;
     return (
-      <p className="text-xs font-normal text-ink-muted">
-        {t("writeOffs.inStock", { qty: qtyText })}
+      <p
+        className="mt-1.5 flex items-center gap-3 text-[13px] font-normal text-ink-muted"
+        role="status"
+        aria-busy={loadingStock}
+      >
+        {t("writeOffs.inStock", { qty: "" }).trimEnd()}{" "}
+        {loadingStock ? (
+          <Spinner size="hint" />
+        ) : (
+          qtyText
+        )}
       </p>
     );
   }

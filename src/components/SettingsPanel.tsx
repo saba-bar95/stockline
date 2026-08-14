@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MouseEvent, ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { api, downloadExport, stripLocale } from "../lib/api";
+import { api, downloadExport, formatApiError, stripLocale } from "../lib/api";
 import { cn } from "../lib/cn";
 import type { Locale } from "../i18n";
 import { usePrefs, type FontSize } from "../preferences/PreferencesContext";
@@ -20,7 +20,13 @@ type PanelPos = {
   maxHeight: number;
 };
 
-export function SettingsPanel() {
+export function SettingsPanel({
+  onOpenGuide,
+  closeSignal,
+}: {
+  onOpenGuide?: () => void;
+  closeSignal?: boolean;
+}) {
   const { t, locale, theme, setTheme, fontSize, cycleFontSize, qtyDecimals, bumpQtyDecimals } =
     usePrefs();
   const [open, setOpen] = useState(false);
@@ -39,6 +45,10 @@ export function SettingsPanel() {
   const location = useLocation();
 
   useEffect(() => {
+    if (closeSignal) setOpen(false);
+  }, [closeSignal]);
+
+  useEffect(() => {
     if (!open) return;
     api<{ orgName: string }>("/me")
       .then((m) => setOrgName(m.orgName || ""))
@@ -55,7 +65,7 @@ export function SettingsPanel() {
       // Anchor above the trigger: distance from viewport bottom to trigger top, plus gap
       const bottom = Math.max(8, window.innerHeight - r.top + 8);
       const spaceAbove = r.top - 16;
-      const maxHeight = Math.max(200, Math.min(420, spaceAbove));
+      const maxHeight = Math.max(200, Math.min(480, spaceAbove));
       setPos({ bottom, left, width, maxHeight });
     }
 
@@ -120,6 +130,19 @@ export function SettingsPanel() {
           <p className="mb-3 font-display text-lg font-semibold tracking-tight text-gradient-heading">
             {t("settings.title")}
           </p>
+
+          {onOpenGuide ? (
+            <button
+              type="button"
+              className="btn-press mb-4 flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-paper text-sm font-medium text-ink hover:border-teal"
+              onClick={() => {
+                setOpen(false);
+                onOpenGuide();
+              }}
+            >
+              {t("guide.open")}
+            </button>
+          ) : null}
 
           <div className="space-y-4">
             <fieldset className="space-y-2">
@@ -274,9 +297,7 @@ export function SettingsPanel() {
                         "stockline-export.xlsx",
                       );
                     } catch (e) {
-                      setExportErr(
-                        e instanceof Error ? e.message : "Export failed",
-                      );
+                      setExportErr(formatApiError(e, t));
                     } finally {
                       setExportBusy(false);
                     }
@@ -294,9 +315,7 @@ export function SettingsPanel() {
                     try {
                       await downloadExport("/export/csv/pl", "stockline-pl.csv");
                     } catch (e) {
-                      setExportErr(
-                        e instanceof Error ? e.message : "Export failed",
-                      );
+                      setExportErr(formatApiError(e, t));
                     } finally {
                       setExportBusy(false);
                     }

@@ -7,8 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation } from "react-router-dom";
-import { api, type NavCounts } from "../lib/api";
+import { api, subscribeApiCacheInvalidate, type NavCounts } from "../lib/api";
 
 type CountsContextValue = {
   counts: Partial<NavCounts>;
@@ -19,7 +18,6 @@ type CountsContextValue = {
 const CountsContext = createContext<CountsContextValue | null>(null);
 
 export function CountsProvider({ children }: { children: ReactNode }) {
-  const location = useLocation();
   const [counts, setCounts] = useState<Partial<NavCounts>>({});
   const [countsReady, setCountsReady] = useState(false);
 
@@ -34,7 +32,10 @@ export function CountsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refreshCounts();
-  }, [refreshCounts, location.pathname]);
+    return subscribeApiCacheInvalidate(() => {
+      void refreshCounts();
+    });
+  }, [refreshCounts]);
 
   const value = useMemo(
     () => ({ counts, countsReady, refreshCounts }),

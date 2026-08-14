@@ -5,7 +5,7 @@ import { ModalForm } from "../components/ModalForm";
 import { ResaleHistoryModal } from "../components/ResaleHistoryModal";
 import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
-import { api, money, qty } from "../lib/api";
+import { api, formatApiError, money, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { usePageCount } from "../preferences/CountsContext";
@@ -79,7 +79,7 @@ export function ResalePage() {
       setPendingDelete(null);
       await load();
     } catch (e) {
-      setDeleteErr(e instanceof Error ? e.message : t("common.error"));
+      setDeleteErr(formatApiError(e, t));
     } finally {
       setDeleting(false);
     }

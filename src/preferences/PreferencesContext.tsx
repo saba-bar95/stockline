@@ -46,6 +46,22 @@ function clampQtyDecimals(n: unknown): number {
   return Math.min(QTY_DECIMALS_MAX, Math.max(QTY_DECIMALS_MIN, Math.round(v)));
 }
 
+function systemTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function defaultPrefs(): Prefs {
+  return {
+    locale: "en",
+    theme: systemTheme(),
+    fontSize: "md",
+    qtyDecimals: 2,
+  };
+}
+
 function readStored(): Prefs {
   try {
     let raw = localStorage.getItem(STORAGE_KEY);
@@ -55,19 +71,21 @@ function readStored(): Prefs {
         if (raw) break;
       }
     }
-    if (!raw)
-      return { locale: "ka", theme: "light", fontSize: "md", qtyDecimals: 2 };
+    if (!raw) return defaultPrefs();
     const parsed = JSON.parse(raw) as Partial<Prefs>;
     return {
-      locale: parsed.locale === "en" ? "en" : "ka",
-      theme: parsed.theme === "dark" ? "dark" : "light",
+      locale: parsed.locale === "ka" ? "ka" : "en",
+      theme:
+        parsed.theme === "dark" || parsed.theme === "light"
+          ? parsed.theme
+          : systemTheme(),
       fontSize: FONT_CYCLE.includes(parsed.fontSize as FontSize)
         ? (parsed.fontSize as FontSize)
         : "md",
       qtyDecimals: clampQtyDecimals(parsed.qtyDecimals ?? 2),
     };
   } catch {
-    return { locale: "ka", theme: "light", fontSize: "md", qtyDecimals: 2 };
+    return defaultPrefs();
   }
 }
 

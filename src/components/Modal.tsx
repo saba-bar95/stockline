@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
+import { lockBodyScroll, unlockBodyScroll } from "../lib/bodyScrollLock";
 import { cn } from "../lib/cn";
 import { useT } from "../preferences/PreferencesContext";
 import { Button } from "./ui";
@@ -12,10 +13,14 @@ type Props = {
   onBack?: () => void;
   children: ReactNode;
   wide?: boolean;
+  /** Keep the header fixed and scroll only the body. */
+  scrollBody?: boolean;
   /** Raised layer for modals opened on top of another modal. */
   stacked?: boolean;
   /** When false, Escape / backdrop are ignored (e.g. hidden under a stacked modal). */
   listenKeys?: boolean;
+  /** Change this to scroll the body back to the top (e.g. in-guide section switch). */
+  scrollResetKey?: string | number;
 };
 
 export function Modal({
@@ -25,33 +30,41 @@ export function Modal({
   onBack,
   children,
   wide,
+  scrollBody = false,
   stacked = false,
   listenKeys = true,
+  scrollResetKey,
 }: Props) {
   const t = useT();
   const panelRef = useRef<HTMLElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const onBackRef = useRef(onBack);
+  onCloseRef.current = onClose;
+  onBackRef.current = onBack;
+
+  useEffect(() => {
+    if (!open) return;
+    lockBodyScroll();
+    return () => unlockBodyScroll();
+  }, [open]);
 
   useEffect(() => {
     if (!open || !listenKeys) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (onBack) onBack();
-        else onClose();
-      }
+      if (e.key !== "Escape") return;
+      if (onBackRef.current) onBackRef.current();
+      else onCloseRef.current();
     };
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open, listenKeys, onClose, onBack]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, listenKeys]);
 
   useEffect(() => {
     if (!open) return;
-    panelRef.current?.scrollTo({ top: 0, left: 0 });
-  }, [open, title]);
+    const el = scrollBody ? bodyRef.current : panelRef.current;
+    el?.scrollTo({ top: 0, left: 0 });
+  }, [open, title, scrollBody, scrollResetKey]);
 
   if (!open) return null;
 
@@ -61,7 +74,7 @@ export function Modal({
     <div
       className={cn(
         "fixed inset-0 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[3px]",
-        stacked ? "z-110" : "z-100",
+        stacked ? "z-130" : "z-120",
       )}
       role="presentation"
       onClick={listenKeys ? dismiss : undefined}
@@ -70,7 +83,10 @@ export function Modal({
       <article
         ref={panelRef}
         className={cn(
-          "max-h-[min(90vh,840px)] w-full overflow-auto rounded-2xl border border-line bg-panel p-5 shadow-2xl sm:p-6",
+          "w-full rounded-2xl border border-line bg-panel shadow-2xl",
+          scrollBody
+            ? "flex max-h-[min(92vh,900px)] flex-col overflow-hidden p-5 sm:p-6"
+            : "max-h-[min(90vh,840px)] overflow-auto p-5 sm:p-6",
           wide ? "max-w-5xl" : "max-w-md",
         )}
         role="dialog"
@@ -80,7 +96,7 @@ export function Modal({
           animation: "modal-panel 0.28s cubic-bezier(0.22, 1, 0.36, 1) both",
         }}
       >
-        <header className="mb-5 flex items-start justify-between gap-3">
+        <header className="mb-5 flex shrink-0 items-start justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {onBack ? (
               <Button
@@ -107,7 +123,12 @@ export function Modal({
             ✕
           </Button>
         </header>
-        <div>{children}</div>
+        <div
+          ref={bodyRef}
+          className={cn(scrollBody && "min-h-0 flex-1 overflow-auto pr-1")}
+        >
+          {children}
+        </div>
       </article>
     </div>,
     document.body,

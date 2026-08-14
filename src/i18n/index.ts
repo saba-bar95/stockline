@@ -58,8 +58,17 @@ export function movementLabel(locale: Locale, type: string): string {
 
 /** Map stored employee status to display string. */
 export function statusLabel(locale: Locale, status: string): string {
-  if (status === "აქტიური") return translate(locale, "hr.statusActive");
+  if (status === "აქტიური" || status === "active") {
+    return translate(locale, "hr.statusActive");
+  }
+  if (status === "არააქტიური" || status === "inactive") {
+    return translate(locale, "hr.statusInactive");
+  }
   return status;
+}
+
+export function isEmployeeActive(status: string): boolean {
+  return status === "აქტიური" || status === "active";
 }
 
 /** Map stored expense type to display string. */
@@ -76,7 +85,6 @@ export function expenseTypeLabel(locale: Locale, type: string): string {
 
 /** Map stored unit codes (and legacy Georgian literals) to display string. */
 export function unitLabel(locale: Locale, unit: string): string {
-  const u = unit.trim();
   const map: Record<string, MessageKey> = {
     kg: "units.kg",
     კგ: "units.kg",
@@ -87,6 +95,7 @@ export function unitLabel(locale: Locale, unit: string): string {
     ც: "units.pc",
     ცალი: "units.pc",
   };
-  const key = map[u];
+  const u = unit.trim();
+  const key = map[u] ?? map[u.toLowerCase()];
   return key ? translate(locale, key) : unit;
 }

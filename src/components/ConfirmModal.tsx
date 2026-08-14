@@ -9,6 +9,7 @@ type Props = {
   message: ReactNode;
   error?: string;
   confirmLabel?: string;
+  confirmVariant?: "primary" | "danger";
   busy?: boolean;
   stacked?: boolean;
   onConfirm: () => void;
@@ -22,6 +23,7 @@ export function ConfirmModal({
   message,
   error,
   confirmLabel,
+  confirmVariant = "danger",
   busy = false,
   stacked = false,
   onConfirm,
@@ -49,14 +51,14 @@ export function ConfirmModal({
           {t("common.cancel")}
         </Button>
         <Button
-          variant="danger"
+          variant={confirmVariant}
           disabled={busy}
           onClick={onConfirm}
           className="min-w-24"
         >
           {busy ? (
             <span className="inline-flex items-center gap-1.5">
-              <Spinner className="size-3.5 border-white/30 border-t-white" />
+              <Spinner size="sm" className="border-white/30 border-t-white" />
               {t("common.deleting")}
             </span>
           ) : (

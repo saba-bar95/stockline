@@ -8,6 +8,7 @@ import { SelectField } from "../components/SelectField";
 import { Button, PageHeader, Surface } from "../components/ui";
 import { api, formatApiError, money, qty } from "../lib/api";
 import { unitLabel } from "../i18n";
+import { canonicalUnit, sameUnit } from "../lib/units";
 import { usePrefs } from "../preferences/PreferencesContext";
 import { usePageCount } from "../preferences/CountsContext";
 
@@ -49,6 +50,7 @@ export function ProductsPage() {
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
+  const [pendingUnitChange, setPendingUnitChange] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -84,10 +86,11 @@ export function ProductsPage() {
   function openEdit(row: Row) {
     setEditing(row);
     setEditName(row.name);
-    setEditUnit(row.unit);
+    setEditUnit(canonicalUnit(row.unit) ?? row.unit);
     setEditErr("");
     setDeleteErr("");
     setPendingDelete(null);
+    setPendingUnitChange(false);
   }
 
   function closeEdit() {
@@ -95,22 +98,37 @@ export function ProductsPage() {
     setEditing(null);
     setEditErr("");
     setPendingDelete(null);
+    setPendingUnitChange(false);
     setDeleteErr("");
   }
 
-  async function saveEdit() {
+  async function saveEdit(confirmedUnitChange = false) {
     if (!editing || editBusy || deleting) return;
     const trimmed = editName.trim();
     if (!trimmed) {
       setEditErr(t("common.formInvalid"));
       return;
     }
+    const nextUnit = canonicalUnit(editUnit) ?? editUnit.trim();
+    if (!nextUnit) {
+      setEditErr(t("common.formInvalid"));
+      return;
+    }
+    if (
+      !sameUnit(editing.unit, nextUnit) &&
+      editing.canDelete === false &&
+      !confirmedUnitChange
+    ) {
+      setPendingUnitChange(true);
+      return;
+    }
+    setPendingUnitChange(false);
     setEditBusy(true);
     setEditErr("");
     try {
       await api(`/products/${editing.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: trimmed, unit: editUnit }),
+        body: JSON.stringify({ name: trimmed, unit: nextUnit }),
       });
       setEditing(null);
       await load();
@@ -171,6 +189,7 @@ export function ProductsPage() {
                 value={unit}
                 onChange={setUnit}
                 searchable={false}
+                required
                 options={UNIT_OPTIONS.map((o) => ({
                   value: o.value,
                   label: t(o.labelKey),
@@ -296,7 +315,7 @@ export function ProductsPage() {
         title={t("products.editTitle")}
         open={Boolean(editing)}
         onClose={closeEdit}
-        listenKeys={!pendingDelete}
+        listenKeys={!pendingDelete && !pendingUnitChange}
       >
         <form
           noValidate
@@ -325,11 +344,24 @@ export function ProductsPage() {
               value={editUnit}
               onChange={setEditUnit}
               searchable={false}
-              options={UNIT_OPTIONS.map((o) => ({
-                value: o.value,
-                label: t(o.labelKey),
-              }))}
+              required
+              options={[
+                ...UNIT_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: t(o.labelKey),
+                })),
+                ...(editUnit &&
+                !UNIT_OPTIONS.some((o) => o.value === editUnit)
+                  ? [{ value: editUnit, label: unitLabel(locale, editUnit) }]
+                  : []),
+              ]}
             />
+            {editing?.canDelete === false &&
+            !sameUnit(editing.unit, editUnit) ? (
+              <p className="mt-1.5 text-xs text-amber">
+                {t("products.unitCaution")}
+              </p>
+            ) : null}
           </div>
           {editErr ? (
             <div
@@ -372,6 +404,17 @@ export function ProductsPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        open={pendingUnitChange}
+        stacked
+        title={t("products.unitChangeTitle")}
+        message={t("products.unitChangeConfirm")}
+        confirmLabel={t("common.save")}
+        confirmVariant="primary"
+        onCancel={() => setPendingUnitChange(false)}
+        onConfirm={() => void saveEdit(true)}
+      />
 
       <ConfirmModal
         open={Boolean(pendingDelete)}

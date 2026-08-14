@@ -138,11 +138,26 @@ export function Button({
   );
 }
 
-export function Spinner({ className }: { className?: string }) {
+const spinnerSizeClass = {
+  hint: "size-3 border-2",
+  sm: "size-3.5 border-2",
+  md: "size-5 border-2",
+  lg: "size-7 border-[2.5px]",
+  xl: "size-8 border-[3px]",
+} as const;
+
+export function Spinner({
+  className,
+  size = "md",
+}: {
+  className?: string;
+  size?: keyof typeof spinnerSizeClass;
+}) {
   return (
     <span
       className={cn(
-        "inline-block size-5 shrink-0 animate-spin rounded-full border-2 border-teal/20 border-t-teal",
+        "inline-block shrink-0 animate-spin rounded-full border-teal/20 border-t-teal",
+        spinnerSizeClass[size],
         className,
       )}
       aria-hidden
@@ -167,7 +182,7 @@ export function LoadingState({
       aria-live="polite"
       aria-busy="true"
     >
-      <Spinner className="size-7 border-[2.5px]" />
+      <Spinner size="lg" />
       {label ? (
         <p className="text-sm font-medium tracking-wide text-ink-muted">
           {label}
