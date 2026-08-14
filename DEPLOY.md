@@ -6,7 +6,7 @@
 პროდუქტი: **Stockline** — მასალები, შემადგენლობა, წარმოება, გაყიდვები, ხელფასები, ხარჯები და მოგება-ზარალი.
 განსაზღვრული დომენები (შემდეგ): `stockline.app`, `stockline.io`, `getstockline.com`.
 GitHub: `saba-bar95/stockline`. Live UI: `https://stockline-app-zt12.vercel.app`.
-Railway API host still uses the older `mise-app-production-…` hostname until renamed there.
+Railway API: `https://stockline-production-ab98.up.railway.app` (see `vercel.json`).
 
 ---
 
@@ -16,7 +16,7 @@ Railway API host still uses the older `mise-app-production-…` hostname until r
 Browser  →  Vercel (https://stockline-app-zt12.vercel.app)
                 │  /api/*  rewrite (proxy)
                 ▼
-            Railway (https://mise-app-production-193e.up.railway.app)
+            Railway (https://stockline-production-ab98.up.railway.app)
                 │
                 ▼
             Neon Postgres
@@ -52,9 +52,11 @@ cd ~/Desktop/stockline
 DATABASE_URL="postgresql://USER:PASS@HOST/neondb?sslmode=require" npm run db:push:neon
 ```
 
-წარმატებისას Neon-ში გამოჩნდება ცხრილები: `organizations`, `ingredients`, …
+წარმატებისას Neon-ში გამოჩნდება ცხრილები: `organizations`, `ingredients`, `employees` (`position` სვეტით) …
 
 > ლოკალური Excel მონაცემები Neon-ში **ავტომატურად არ გადადის**. Production ცარიელი ორგანიზაციებით იწყება; მომხმარებლები Clerk-ით შედიან და საკუთარ org-ს ქმნიან.
+
+სქემის შემდეგი ცვლილების შემდეგ (მაგ. ახალი სვეტი) ისევ გაუშვი `db:push:neon`. API სტარტზე Neon-ზე ასევე იძახებს `ensurePostgresColumns` (`employees.position`) — თუ ცხრილი ჯერ არ არსებობს, ეს ALTER უვნებელია.
 
 ---
 
@@ -74,6 +76,8 @@ PORT=3001
 
 `VITE_*` Railway-ზე **არ** გჭირდება (ეს მხოლოდ frontend build-ისთვისაა).
 
+`CLERK_SECRET_KEY` **აუცილებელია**. თუ აკლია, API Neon/production-ზე არ იხსნება ლოკალური org-ით — პასუხი იქნება 503 `misconfigured`.
+
 3. Start command (თუ ავტომატურად არ აიღო `railway.toml`):
 
 ```
@@ -81,7 +85,7 @@ npx tsx server/run.ts
 ```
 
 4. **Generate Domain** (Settings → Networking) — მიიღებ რაღაცას:  
-   `https://mise-app-production-193e.up.railway.app` (ან ახალი სახელი თუ გადაარქვი)
+   `https://stockline-production-ab98.up.railway.app` (ან ახალი სახელი თუ გადაარქვი)
 5. შეამოწმე:  
    `https://YOUR_RAILWAY_HOST/api/health`  
    პასუხი უნდა იყოს `{"ok":true,"app":"stockline"}`.
@@ -107,7 +111,7 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_... ან pk_live_...
 მაგალითი (მიმდინარე):
 
 ```json
-"destination": "https://mise-app-production-193e.up.railway.app/api/:path*"
+"destination": "https://stockline-production-ab98.up.railway.app/api/:path*"
 ```
 
 5. Deploy. მიმდინარე UI: `https://stockline-app-zt12.vercel.app`.
@@ -141,6 +145,7 @@ Clerk Dashboard → შენი აპლიკაცია:
 2. დარეგისტრირდი / შეხედი → Stockline UI.
 3. დაამატე ინგრედიენტი → Neon Table Editor-ში უნდა ჩანდეს `ingredients` row შენი `organization_id`-ით.
 4. Settings → Excel/CSV export — უნდა მუშაობდეს (ორგანიზაციის მონაცემები მხოლოდ).
+5. Sidebar / Settings → **How it works** — overlay იხსნება იმავე viewport-ზე (ცალკე გვერდი არ არის).
 
 ---
 
@@ -165,6 +170,12 @@ Clerk Dashboard → შენი აპლიკაცია:
 
 **Sign-in მუშაობს, მონაცემები არ ინახება**  
 - Railway-ზე `DATABASE_URL` აკლია ან `db:push:neon` არ გაგიკეთებია.
+
+**API 503 `misconfigured`**  
+- Railway-ზე `CLERK_SECRET_KEY` აკლია. Production-ში Clerk-ის გარეშე API აღარ იხსნება.
+
+**ხელფასი/თანამშრომელი: `position` ან PATCH ვერ ინახება**  
+- Neon schema ძველია. თავიდან გაუშვი `db:push:neon` და გადატვირთე Railway API.
 
 **Clerk: redirect mismatch**  
 - Dashboard-ში დაამატე ზუსტი Vercel URL.

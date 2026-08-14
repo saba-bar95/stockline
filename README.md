@@ -19,10 +19,11 @@ Each signed-in organization only sees its own data (`organizationId` scoping). A
 | **Products** | Manufactured items — material + overhead unit cost (Excel parity) |
 | **Compositions** | Per-unit material lines (bill of materials) |
 | **Purchases / Production / Sales / Write-offs** | Day-to-day ops with stock and date checks |
-| **Payroll** | Employees and daily pay → daily overhead pool |
-| **Expenses** | Rent/utilities spread by month; other costs in daily pool |
-| **P&L** | Day / week / month — revenue, COGS, write-offs, unallocated OH, net |
-| **Settings** | Theme, font size, locale (KA/EN), org rename, CSV/Excel export |
+| **Payroll** | Employees (name, position, daily rate, active/inactive) and payroll rows. The rate is a reminder only — a payroll entry posts wages. Inactive people stay in history but cannot be added to new payroll. Edit/delete a payroll row and that day’s overhead + production cost recalculate. |
+| **Expenses** | Rent/utilities spread by month; other costs in the daily pool. Wages belong on Payroll, not here. |
+| **P&L** | Day / week / this month / last month — revenue, COGS, write-offs, unallocated OH, net |
+| **How it works** | In-app overlay (sidebar, mobile header, or Settings) — pages, edits, cost allocation, P&L |
+| **Settings** | Theme, font size, locale (KA/EN), quantity decimals, org rename, CSV/Excel export |
 | **Auth** | Email + Google via Clerk; custom sign-in/up UI |
 
 ## Stack
@@ -99,13 +100,27 @@ See `.env.example`. Important ones:
 
 Never trust a client-supplied organization id.
 
-## Cost model (Excel parity)
+## Security
 
-- Material average cost from purchases  
-- Production snapshots material unit cost  
-- Daily overhead pool = payroll + dated OH (excl. rent/utilities/salary mirrors) + (rent+utilities)/daysInMonth  
-- Pool allocated to runs by material-cost weight  
-- Product full unit cost = weighted production material + OH  
+- **Auth:** Clerk JWT on every `/api` route except `/api/health`. Production and Neon **require** `CLERK_SECRET_KEY` — missing keys do not open a local org.
+- **Tenancy:** memberships map a Clerk user to one organization; queries are scoped with `organizationId`. IDs from another org return 404.
+- **Browser:** tokens go in `Authorization: Bearer`, not cookies (no classic CSRF). Vercel sends frame-deny, nosniff, and a CSP that allows Clerk + Google sign-in.
+- **Abuse:** per-IP rate limits (stricter on writes/export), 256 KB body cap, 45s request timeout. Tenant JSON is `Cache-Control: no-store`.
+
+This is a small multi-tenant ops app, not a bank. Keep Clerk, Neon, and Railway secrets out of git; set `CORS_ORIGIN` to the real Vercel URL; use Clerk live keys when you leave test mode.
+
+## Cost model
+
+- **Material average cost** = sum of purchase totals ÷ sum of purchase quantities (that material).
+- **Production** snapshots **material** unit cost at save time. Later purchase-price changes do not rewrite that run’s material total.
+- **Daily overhead pool** = payroll on that date + other expenses on that date + (rent + utilities in that calendar month) ÷ days in the month. Overhead is **not** snapshotted — it always uses the current pool for the run’s date.
+- **Allocation:** if you produce that day, the pool is baked into those runs (split by each run’s material-cost weight; if material cost is zero, split by quantity so wages are not dropped). Unsold allocated OH stays in **inventory** (stock value), not in net profit.
+- **No production that day:** the same pool hits net as **unallocated overhead**. It is not carried forward.
+- **Product full unit cost** = live average of (material + overhead) across all of that product’s runs. Sold and written-off units use this average, so editing past payroll/expenses on a production day updates COGS.
+- **Merchandise** never receives production overhead (average purchase price only).
+- **P&L:** `net = revenue − COGS − write-off cost − unallocated`. Allocated overhead is already inside manufactured COGS for units you sold — do not subtract the full overhead line again.
+
+In the app, **How it works** (sidebar / Settings) spells this out with the page map and edit rules.  
 
 ## Scripts
 
@@ -114,7 +129,7 @@ Never trust a client-supplied organization id.
 | `npm run dev` | Vite + API watch |
 | `npm run build` | Typecheck + Vite production build |
 | `npm start` | API only (Railway) |
-| `npm test` | Vitest (org isolation, etc.) |
+| `npm test` | Vitest: org isolation, P&L/overhead, mutations, payroll ↔ production flow |
 | `npm run db:push:neon` | Push Postgres schema to Neon (needs `DATABASE_URL` in `.env`) |
 | `npm run excel:sync` | Import from local Excel into **SQLite** `dev_local_org` only |
 
@@ -136,10 +151,11 @@ Local SQLite data is **not** migrated to Neon automatically.
 ## Project layout
 
 ```
-src/           React UI (pages, auth, DataTable, i18n KA/EN, settings)
+src/           React UI (pages, auth, DataTable, i18n KA/EN, settings, how-it-works overlay)
 server/        Hono API, auth, export, cost logic
 server/db/     SQLite + Neon Drizzle schemas, migrate, query helpers
-scripts/       Excel export/import (local)
+server/tests/  Vitest (isolation, P&L, mutations, payroll)
+scripts/       Excel export/import (local SQLite `dev_local_org` only)
 DEPLOY.md      Production deploy guide
 vercel.json    UI build + /api rewrite to Railway
 railway.toml   API start / healthcheck
