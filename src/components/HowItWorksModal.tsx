@@ -105,15 +105,15 @@ export function HowItWorksModal({
 
   return (
     <Modal title={t("guide.title")} open={open} onClose={onClose} wide scrollBody>
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
         <nav
-          className="shrink-0 border-b border-line bg-paper/70 px-3 py-3 lg:w-[13.5rem] lg:border-r lg:border-b-0 lg:px-3 lg:py-4"
+          className="shrink-0 border-b border-line bg-paper/70 px-3 py-3 lg:w-52 lg:overflow-hidden lg:border-r lg:border-b-0 lg:px-3 lg:py-4"
           aria-label={t("guide.title")}
         >
           <p className="mb-2 hidden px-2 text-[0.65rem] font-semibold tracking-[0.14em] text-ink-muted uppercase lg:block">
             {t("guide.toc")}
           </p>
-          <div className="flex gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-col lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {SECTIONS.map((s) => {
               const active = section === s.id;
               return (
@@ -122,13 +122,14 @@ export function HowItWorksModal({
                   type="button"
                   onClick={() => setSection(s.id)}
                   className={cn(
-                    "btn-press shrink-0 cursor-pointer rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
+                    "btn-press cursor-pointer rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
+                    "max-w-[14rem] shrink-0 whitespace-normal break-words lg:max-w-none lg:w-full lg:shrink",
                     active
                       ? "bg-teal text-white shadow-sm"
                       : "text-ink-soft hover:bg-teal-soft/50 hover:text-ink",
                   )}
                 >
-                  <span className="whitespace-nowrap">{t(s.title)}</span>
+                  {t(s.title)}
                 </button>
               );
             })}
@@ -137,7 +138,7 @@ export function HowItWorksModal({
 
         <div
           ref={contentRef}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6"
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6"
           key={section}
           style={{ animation: "guide-section-in 0.22s ease both" }}
         >
