@@ -11,13 +11,28 @@ const buckets = new Map<string, Bucket>();
 export function allowedOrigins(): string[] {
   return (process.env.CORS_ORIGIN || "http://localhost:5173")
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean);
 }
 
+/**
+ * Origins allowed as JWT `azp`. Prefer CLERK_AUTHORIZED_PARTIES; else HTTPS
+ * entries from CORS_ORIGIN. Never lock production to localhost-only (common
+ * misconfig that rejects every live Vercel session token).
+ */
 export function clerkAuthorizedParties(): string[] | undefined {
-  const parties = allowedOrigins().filter((o) => /^https?:\/\//i.test(o));
-  return parties.length ? parties : undefined;
+  const fromEnv = (process.env.CLERK_AUTHORIZED_PARTIES || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\/$/, ""))
+    .filter((o) => /^https?:\/\//i.test(o));
+  if (fromEnv.length) return fromEnv;
+
+  const fromCors = allowedOrigins().filter((o) => /^https?:\/\//i.test(o));
+  if (requireClerkAuth()) {
+    const httpsOnly = fromCors.filter((o) => /^https:\/\//i.test(o));
+    return httpsOnly.length ? httpsOnly : undefined;
+  }
+  return fromCors.length ? fromCors : undefined;
 }
 
 export function isPublicHealthPath(path: string): boolean {

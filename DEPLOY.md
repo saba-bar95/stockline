@@ -78,6 +78,8 @@ PORT=3001
 
 `CLERK_SECRET_KEY` **აუცილებელია**. თუ აკლია, API Neon/production-ზე არ იხსნება ლოკალური org-ით — პასუხი იქნება 503 `misconfigured`.
 
+`CORS_ORIGIN` უნდა იყოს **ზუსტად** Vercel URL (ტრეილინგ `/` გარეშე), მაგ. `https://stockline-app-zt12.vercel.app`. თუ აქ მხოლოდ localhostაა, live სესიის JWT იფეილდება (`Unauthorized` გვერდზე).
+
 3. Start command (თუ ავტომატურად არ აიღო `railway.toml`):
 
 ```
@@ -170,6 +172,10 @@ Clerk Dashboard → შენი აპლიკაცია:
 
 **Sign-in მუშაობს, მონაცემები არ ინახება**  
 - Railway-ზე `DATABASE_URL` აკლია ან `db:push:neon` არ გაგიკეთებია.
+
+**API 401 Unauthorized გვერდზე (Clerk login მუშაობს)**  
+- Railway `CORS_ORIGIN` არ ემთხვევა Vercel URL-ს (მაგ. მხოლოდ localhost). დააყენე `https://stockline-app-zt12.vercel.app` და გადატვირთე API.  
+- `CLERK_SECRET_KEY` უნდა იყოს იმავე Clerk აპიდან, რაც Vercel-ის `VITE_CLERK_PUBLISHABLE_KEY` (test/live ნაზავი იძლევა 401-ს).
 
 **API 503 `misconfigured`**  
 - Railway-ზე `CLERK_SECRET_KEY` აკლია. Production-ში Clerk-ის გარეშე API აღარ იხსნება.

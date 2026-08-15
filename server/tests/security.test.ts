@@ -3,6 +3,7 @@ import type { Context } from "hono";
 import { app } from "../index.ts";
 import {
   clientIp,
+  clerkAuthorizedParties,
   isPublicHealthPath,
   requireClerkAuth,
 } from "../security.ts";
@@ -33,6 +34,17 @@ describe("security helpers", () => {
 
   it("does not enable Clerk-optional mode under vitest", () => {
     expect(requireClerkAuth()).toBe(false);
+  });
+
+  it("allows localhost azp parties in non-production vitest", () => {
+    const prev = process.env.CORS_ORIGIN;
+    const prevParties = process.env.CLERK_AUTHORIZED_PARTIES;
+    process.env.CORS_ORIGIN = "http://localhost:5173";
+    delete process.env.CLERK_AUTHORIZED_PARTIES;
+    expect(clerkAuthorizedParties()).toEqual(["http://localhost:5173"]);
+    process.env.CORS_ORIGIN = prev;
+    if (prevParties == null) delete process.env.CLERK_AUTHORIZED_PARTIES;
+    else process.env.CLERK_AUTHORIZED_PARTIES = prevParties;
   });
 
   it("prefers platform IP headers over a spoofed X-Forwarded-For prefix", () => {

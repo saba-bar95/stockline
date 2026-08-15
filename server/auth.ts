@@ -150,6 +150,7 @@ export async function authMiddleware(c: Context, next: Next) {
     const authorizedParties = clerkAuthorizedParties();
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY!,
+      clockSkewInMs: 10_000,
       ...(authorizedParties ? { authorizedParties } : {}),
     });
     const userId = payload.sub;
@@ -160,7 +161,10 @@ export async function authMiddleware(c: Context, next: Next) {
     c.set("organizationId", auth.organizationId);
     c.set("orgName", auth.orgName);
     return next();
-  } catch {
+  } catch (err) {
+    const reason =
+      err instanceof Error ? err.message : typeof err === "string" ? err : "verify_failed";
+    console.error("Clerk token verify failed:", reason);
     return c.json(ERR.unauthorized, 401);
   }
 }

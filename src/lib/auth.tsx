@@ -50,11 +50,16 @@ export function useApiToken(): TokenFn {
 }
 
 function TokenBridge({ children }: { children: ReactNode }) {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const tokenFn = useMemo(
+    () => async () => {
+      if (!isLoaded || !isSignedIn) return null;
+      return getToken();
+    },
+    [getToken, isLoaded, isSignedIn],
+  );
   return (
-    <TokenContext.Provider value={() => getToken()}>
-      {children}
-    </TokenContext.Provider>
+    <TokenContext.Provider value={tokenFn}>{children}</TokenContext.Provider>
   );
 }
 
@@ -113,7 +118,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function SessionCacheGate({ children }: { children: ReactNode }) {
-  const { userId, orgId } = useAuth();
+  const { userId, orgId, isLoaded } = useAuth();
   const sessionKey = `${userId ?? ""}:${orgId ?? ""}`;
   const prevKey = useRef(sessionKey);
 
@@ -123,6 +128,9 @@ function SessionCacheGate({ children }: { children: ReactNode }) {
       prevKey.current = sessionKey;
     }
   }, [sessionKey]);
+
+  // Wait for Clerk before mounting pages so GETs never fire without a JWT.
+  if (!isLoaded || !userId) return null;
 
   return <Fragment key={sessionKey}>{children}</Fragment>;
 }
