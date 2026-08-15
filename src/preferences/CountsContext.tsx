@@ -26,7 +26,14 @@ export function CountsProvider({ children }: { children: ReactNode }) {
       setCounts(await api<NavCounts>("/counts"));
       setCountsReady(true);
     } catch {
-      /* keep last known counts */
+      // Retry once shortly — often a race before the Clerk JWT is attached.
+      try {
+        await new Promise((r) => setTimeout(r, 200));
+        setCounts(await api<NavCounts>("/counts"));
+        setCountsReady(true);
+      } catch {
+        /* keep last known counts */
+      }
     }
   }, []);
 

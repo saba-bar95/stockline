@@ -12,6 +12,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import {
@@ -50,16 +51,11 @@ export function useApiToken(): TokenFn {
 }
 
 function TokenBridge({ children }: { children: ReactNode }) {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-  const tokenFn = useMemo(
-    () => async () => {
-      if (!isLoaded || !isSignedIn) return null;
-      return getToken();
-    },
-    [getToken, isLoaded, isSignedIn],
-  );
+  const { getToken } = useAuth();
   return (
-    <TokenContext.Provider value={tokenFn}>{children}</TokenContext.Provider>
+    <TokenContext.Provider value={() => getToken()}>
+      {children}
+    </TokenContext.Provider>
   );
 }
 
@@ -118,21 +114,49 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function SessionCacheGate({ children }: { children: ReactNode }) {
-  const { userId, orgId, isLoaded } = useAuth();
-  const sessionKey = `${userId ?? ""}:${orgId ?? ""}`;
-  const prevKey = useRef(sessionKey);
+  const { userId, isLoaded, getToken } = useAuth();
+  const [ready, setReady] = useState(false);
+  const prevUser = useRef<string | null>(null);
 
   useEffect(() => {
-    if (prevKey.current !== sessionKey) {
-      invalidateApiCache();
-      prevKey.current = sessionKey;
-    }
-  }, [sessionKey]);
+    let cancelled = false;
+    setReady(false);
 
-  // Wait for Clerk before mounting pages so GETs never fire without a JWT.
-  if (!isLoaded || !userId) return null;
+    (async () => {
+      if (!isLoaded || !userId) return;
+      // Ensure a session JWT exists before mounting pages that fetch /counts.
+      for (let i = 0; i < 8; i++) {
+        const token = await getToken();
+        if (token) {
+          if (!cancelled) {
+            if (prevUser.current !== userId) {
+              invalidateApiCache();
+              prevUser.current = userId;
+            }
+            setReady(true);
+          }
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 50 * (i + 1)));
+      }
+      // Last resort: still mount so SignedIn UI is not blank forever.
+      if (!cancelled) {
+        if (prevUser.current !== userId) {
+          invalidateApiCache();
+          prevUser.current = userId;
+        }
+        setReady(true);
+      }
+    })();
 
-  return <Fragment key={sessionKey}>{children}</Fragment>;
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, userId, getToken]);
+
+  if (!isLoaded || !userId || !ready) return null;
+
+  return <Fragment key={userId}>{children}</Fragment>;
 }
 
 function AuthLocaleSwitch({
