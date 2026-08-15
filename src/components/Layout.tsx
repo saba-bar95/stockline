@@ -157,7 +157,7 @@ function LayoutShell() {
               <HelpIcon className="size-[1.15rem] shrink-0 opacity-90" />
               <span>{t("guide.open")}</span>
             </button>
-            <SettingsPanel onOpenGuide={openGuide} closeSignal={guideOpen} />
+            <SettingsPanel closeSignal={guideOpen} />
             <SidebarAccount />
           </div>
         </div>

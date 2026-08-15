@@ -13,14 +13,15 @@ type Props = {
   onBack?: () => void;
   children: ReactNode;
   wide?: boolean;
-  /** Keep the header fixed and scroll only the body. */
+  /**
+   * Fixed panel height + flex body (children own scrolling).
+   * Keeps the dialog centered when content length changes.
+   */
   scrollBody?: boolean;
   /** Raised layer for modals opened on top of another modal. */
   stacked?: boolean;
   /** When false, Escape / backdrop are ignored (e.g. hidden under a stacked modal). */
   listenKeys?: boolean;
-  /** Change this to scroll the body back to the top (e.g. in-guide section switch). */
-  scrollResetKey?: string | number;
 };
 
 export function Modal({
@@ -33,11 +34,9 @@ export function Modal({
   scrollBody = false,
   stacked = false,
   listenKeys = true,
-  scrollResetKey,
 }: Props) {
   const t = useT();
   const panelRef = useRef<HTMLElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const onBackRef = useRef(onBack);
   onCloseRef.current = onClose;
@@ -61,10 +60,9 @@ export function Modal({
   }, [open, listenKeys]);
 
   useEffect(() => {
-    if (!open) return;
-    const el = scrollBody ? bodyRef.current : panelRef.current;
-    el?.scrollTo({ top: 0, left: 0 });
-  }, [open, title, scrollBody, scrollResetKey]);
+    if (!open || scrollBody) return;
+    panelRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [open, title, scrollBody]);
 
   if (!open) return null;
 
@@ -73,7 +71,7 @@ export function Modal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[3px]",
+        "fixed inset-0 flex items-center justify-center bg-ink/50 p-3 backdrop-blur-[3px] sm:p-4",
         stacked ? "z-130" : "z-120",
       )}
       role="presentation"
@@ -85,7 +83,7 @@ export function Modal({
         className={cn(
           "w-full rounded-2xl border border-line bg-panel shadow-2xl",
           scrollBody
-            ? "flex max-h-[min(92vh,900px)] flex-col overflow-hidden p-5 sm:p-6"
+            ? "flex h-[min(88vh,760px)] flex-col overflow-hidden p-0"
             : "max-h-[min(90vh,840px)] overflow-auto p-5 sm:p-6",
           wide ? "max-w-5xl" : "max-w-md",
         )}
@@ -96,7 +94,12 @@ export function Modal({
           animation: "modal-panel 0.28s cubic-bezier(0.22, 1, 0.36, 1) both",
         }}
       >
-        <header className="mb-5 flex shrink-0 items-start justify-between gap-3">
+        <header
+          className={cn(
+            "flex shrink-0 items-start justify-between gap-3",
+            scrollBody ? "border-b border-line px-5 py-4 sm:px-6" : "mb-5",
+          )}
+        >
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {onBack ? (
               <Button
@@ -124,8 +127,9 @@ export function Modal({
           </Button>
         </header>
         <div
-          ref={bodyRef}
-          className={cn(scrollBody && "min-h-0 flex-1 overflow-auto pr-1")}
+          className={cn(
+            scrollBody && "flex min-h-0 flex-1 flex-col overflow-hidden",
+          )}
         >
           {children}
         </div>

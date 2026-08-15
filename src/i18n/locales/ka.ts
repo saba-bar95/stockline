@@ -147,7 +147,6 @@ const kaMessages = {
     kitchenName: "ორგანიზაციის სახელი",
     saveName: "შენახვა",
     account: "ანგარიში",
-    howItWorks: "როგორ მუშაობს",
   },
   table: {
     empty: "მონაცემები არ არის",
@@ -420,6 +419,8 @@ const kaMessages = {
   guide: {
     title: "როგორ მუშაობს Stockline",
     open: "როგორ მუშაობს",
+    toc: "სექციები",
+    formulaLabel: "ფორმულა",
     secFlow: "ნაკადი",
     secPages: "გვერდები",
     secEdit: "რისი შეცვლა შეიძლება",

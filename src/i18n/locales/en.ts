@@ -148,7 +148,6 @@ export const en: Messages = {
     kitchenName: "Organization name",
     saveName: "Save",
     account: "Account",
-    howItWorks: "How it works",
   },
   table: {
     empty: "No data",
@@ -420,6 +419,8 @@ export const en: Messages = {
   guide: {
     title: "How Stockline works",
     open: "How it works",
+    toc: "Sections",
+    formulaLabel: "Formula",
     secFlow: "The flow",
     secPages: "Pages",
     secEdit: "What you can edit",

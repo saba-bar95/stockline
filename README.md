@@ -22,7 +22,7 @@ Each signed-in organization only sees its own data (`organizationId` scoping). A
 | **Payroll** | Employees (name, position, daily rate, active/inactive) and payroll rows. The rate is a reminder only — a payroll entry posts wages. Inactive people stay in history but cannot be added to new payroll. Edit/delete a payroll row and that day’s overhead + production cost recalculate. |
 | **Expenses** | Rent/utilities spread by month; other costs in the daily pool. Wages belong on Payroll, not here. |
 | **P&L** | Day / week / this month / last month — revenue, COGS, write-offs, unallocated OH, net |
-| **How it works** | In-app overlay (sidebar, mobile header, or Settings) — pages, edits, cost allocation, P&L |
+| **How it works** | In-app overlay (sidebar or mobile header) — pages, edits, cost allocation, P&L |
 | **Settings** | Theme, font size, locale (KA/EN), quantity decimals, org rename, CSV/Excel export |
 | **Auth** | Email + Google via Clerk; custom sign-in/up UI |
 
@@ -120,7 +120,7 @@ This is a small multi-tenant ops app, not a bank. Keep Clerk, Neon, and Railway 
 - **Merchandise** never receives production overhead (average purchase price only).
 - **P&L:** `net = revenue − COGS − write-off cost − unallocated`. Allocated overhead is already inside manufactured COGS for units you sold — do not subtract the full overhead line again.
 
-In the app, **How it works** (sidebar / Settings) spells this out with the page map and edit rules.  
+In the app, **How it works** (sidebar) spells this out with the page map and edit rules.  
 
 ## Scripts
 

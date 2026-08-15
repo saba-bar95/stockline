@@ -20,13 +20,7 @@ type PanelPos = {
   maxHeight: number;
 };
 
-export function SettingsPanel({
-  onOpenGuide,
-  closeSignal,
-}: {
-  onOpenGuide?: () => void;
-  closeSignal?: boolean;
-}) {
+export function SettingsPanel({ closeSignal }: { closeSignal?: boolean }) {
   const { t, locale, theme, setTheme, fontSize, cycleFontSize, qtyDecimals, bumpQtyDecimals } =
     usePrefs();
   const [open, setOpen] = useState(false);
@@ -130,19 +124,6 @@ export function SettingsPanel({
           <p className="mb-3 font-display text-lg font-semibold tracking-tight text-gradient-heading">
             {t("settings.title")}
           </p>
-
-          {onOpenGuide ? (
-            <button
-              type="button"
-              className="btn-press mb-4 flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-paper text-sm font-medium text-ink hover:border-teal"
-              onClick={() => {
-                setOpen(false);
-                onOpenGuide();
-              }}
-            >
-              {t("guide.open")}
-            </button>
-          ) : null}
 
           <div className="space-y-4">
             <fieldset className="space-y-2">

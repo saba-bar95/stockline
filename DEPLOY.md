@@ -145,7 +145,7 @@ Clerk Dashboard → შენი აპლიკაცია:
 2. დარეგისტრირდი / შეხედი → Stockline UI.
 3. დაამატე ინგრედიენტი → Neon Table Editor-ში უნდა ჩანდეს `ingredients` row შენი `organization_id`-ით.
 4. Settings → Excel/CSV export — უნდა მუშაობდეს (ორგანიზაციის მონაცემები მხოლოდ).
-5. Sidebar / Settings → **How it works** — overlay იხსნება იმავე viewport-ზე (ცალკე გვერდი არ არის).
+5. Sidebar → **How it works** — overlay იხსნება იმავე viewport-ზე (ცალკე გვერდი არ არის).
 
 ---
 
