@@ -44,6 +44,10 @@ const kaMessages = {
     passwordOptional: "არასავალდებულო — კოდით რეგისტრაციისთვის",
     errEmailCode:
       "ელფოსტის კოდი ამ ანგარიშზე ხელმისაწვდომი არაა. სცადე Google ან პაროლი.",
+    errEmailEmpty: "შეიყვანე ელფოსტა",
+    errEmailInvalid: "შეიყვანე სწორი ელფოსტის მისამართი",
+    errCodeEmpty: "შეიყვანე კოდი ელფოსტიდან",
+    errPasswordEmpty: "შეიყვანე პაროლი",
     errExtraStep: "დამატებითი ნაბიჯი საჭიროა",
     errEnterCredentials: "შეიყვანე ელფოსტა და პაროლი",
     errNoPassword:
@@ -91,6 +95,12 @@ const kaMessages = {
     page: "გვერდი {page} / {total}",
     empty: "მონაცემები არ არის",
     formInvalid: "შეავსე სავალდებულო ველები.",
+    qtyRequired: "შეიყვანე რაოდენობა ნულზე მეტი.",
+    dateRequired: "აირჩიე თარიღი.",
+    priceRequired: "შეიყვანე ფასი ნულზე მეტი ან ნული.",
+    amountRequired: "შეიყვანე თანხა ნულზე მეტი.",
+    rateRequired: "შეიყვანე სწორი დღიური განაკვეთი.",
+    expenseAmountRequired: "შეიყვანე მინიმუმ ერთი თანხა (GEL ან USD).",
     edit: "რედაქტირება",
     save: "შენახვა",
     name: "დასახელება",
@@ -146,6 +156,8 @@ const kaMessages = {
     exportHint: "ჩამოტვირთე მხოლოდ შენი ორგანიზაციის მონაცემები",
     kitchenName: "ორგანიზაციის სახელი",
     saveName: "შენახვა",
+    orgNameRequired: "შეიყვანე ორგანიზაციის სახელი",
+    orgNameSaved: "შენახულია",
     account: "ანგარიში",
   },
   table: {

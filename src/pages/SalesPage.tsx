@@ -266,14 +266,23 @@ export function SalesPage() {
             title={t("sales.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              if (!date) throw new Error(t("common.dateRequired"));
+              const qtyNum = Number(q);
+              const priceNum = Number(price);
+              if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+                throw new Error(t("common.qtyRequired"));
+              }
+              if (!Number.isFinite(priceNum) || priceNum < 0) {
+                throw new Error(t("common.priceRequired"));
+              }
               await api("/sales", {
                 method: "POST",
                 body: JSON.stringify({
                   date,
                   source,
                   itemId,
-                  qty: Number(q),
-                  unitPrice: Number(price),
+                  qty: qtyNum,
+                  unitPrice: priceNum,
                 }),
               });
               load();
@@ -281,7 +290,7 @@ export function SalesPage() {
           >
             <div className="field">
               <span>{t("common.date")}</span>
-              <DateField value={date} onChange={setDate} />
+              <DateField value={date} onChange={setDate} required />
             </div>
             <div className="field">
               <span>{t("common.source")}</span>

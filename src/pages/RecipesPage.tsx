@@ -99,12 +99,16 @@ export function RecipesPage() {
             title={t("recipes.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              const qtyNum = Number(qtyVal);
+              if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+                throw new Error(t("common.qtyRequired"));
+              }
               await api("/recipes", {
                 method: "POST",
                 body: JSON.stringify({
                   productId,
                   ingredientId,
-                  qty: Number(qtyVal),
+                  qty: qtyNum,
                 }),
               });
               load();
@@ -139,7 +143,7 @@ export function RecipesPage() {
               <input
                 type="number"
                 step="any"
-                min="0"
+                min="0.0001"
                 value={qtyVal}
                 onChange={(e) => setQtyVal(e.target.value)}
                 required

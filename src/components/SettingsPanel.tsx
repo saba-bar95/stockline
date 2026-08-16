@@ -31,6 +31,9 @@ export function SettingsPanel({ closeSignal }: { closeSignal?: boolean }) {
     maxHeight: 520,
   });
   const [orgName, setOrgName] = useState("");
+  const [orgBusy, setOrgBusy] = useState(false);
+  const [orgMsg, setOrgMsg] = useState("");
+  const [orgErr, setOrgErr] = useState("");
   const [exportBusy, setExportBusy] = useState(false);
   const [exportErr, setExportErr] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -238,23 +241,47 @@ export function SettingsPanel({ closeSignal }: { closeSignal?: boolean }) {
                 <input
                   className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-paper px-2 text-sm text-ink"
                   value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
+                  onChange={(e) => {
+                    setOrgName(e.target.value);
+                    if (orgErr) setOrgErr("");
+                    if (orgMsg) setOrgMsg("");
+                  }}
                   maxLength={80}
                 />
                 <button
                   type="button"
-                  className="btn-press h-9 shrink-0 cursor-pointer rounded-lg bg-teal px-2.5 text-xs font-medium text-white"
+                  disabled={orgBusy}
+                  className="btn-press h-9 shrink-0 cursor-pointer rounded-lg bg-teal px-2.5 text-xs font-medium text-white disabled:opacity-50"
                   onClick={async () => {
-                    if (!orgName.trim()) return;
-                    await api("/me/org", {
-                      method: "PATCH",
-                      body: JSON.stringify({ name: orgName.trim() }),
-                    });
+                    if (!orgName.trim()) {
+                      setOrgMsg("");
+                      setOrgErr(t("settings.orgNameRequired"));
+                      return;
+                    }
+                    setOrgBusy(true);
+                    setOrgErr("");
+                    setOrgMsg("");
+                    try {
+                      await api("/me/org", {
+                        method: "PATCH",
+                        body: JSON.stringify({ name: orgName.trim() }),
+                      });
+                      setOrgMsg(t("settings.orgNameSaved"));
+                    } catch (e) {
+                      setOrgErr(formatApiError(e, t));
+                    } finally {
+                      setOrgBusy(false);
+                    }
                   }}
                 >
                   {t("settings.saveName")}
                 </button>
               </div>
+              {orgErr ? (
+                <p className="text-xs text-red-600">{orgErr}</p>
+              ) : orgMsg ? (
+                <p className="text-xs text-teal">{orgMsg}</p>
+              ) : null}
             </fieldset>
 
             <fieldset className="space-y-2">

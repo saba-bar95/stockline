@@ -46,6 +46,10 @@ export const en: Messages = {
     passwordOptional: "Optional — for email code sign-up",
     errEmailCode:
       "Email code is not available for this account. Try Google or password.",
+    errEmailEmpty: "Enter your email",
+    errEmailInvalid: "Enter a valid email address",
+    errCodeEmpty: "Enter the code from your email",
+    errPasswordEmpty: "Enter your password",
     errExtraStep: "An additional step is required",
     errEnterCredentials: "Enter email and password",
     errNoPassword:
@@ -92,6 +96,12 @@ export const en: Messages = {
     page: "Page {page} / {total}",
     empty: "No data",
     formInvalid: "Please fill in the required fields.",
+    qtyRequired: "Enter a quantity greater than zero.",
+    dateRequired: "Select a date.",
+    priceRequired: "Enter a price of zero or more.",
+    amountRequired: "Enter an amount greater than zero.",
+    rateRequired: "Enter a valid daily rate.",
+    expenseAmountRequired: "Enter at least one amount (GEL or USD).",
     edit: "Edit",
     save: "Save",
     name: "Name",
@@ -147,6 +157,8 @@ export const en: Messages = {
     exportHint: "Download only your organization’s data",
     kitchenName: "Organization name",
     saveName: "Save",
+    orgNameRequired: "Enter an organization name",
+    orgNameSaved: "Saved",
     account: "Account",
   },
   table: {

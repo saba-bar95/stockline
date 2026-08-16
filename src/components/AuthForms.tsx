@@ -93,6 +93,18 @@ function errMsg(err: unknown): string {
   );
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function emailFieldError(
+  email: string,
+  t: ReturnType<typeof usePrefs>["t"],
+): string | null {
+  const value = email.trim();
+  if (!value) return t("auth.errEmailEmpty");
+  if (!EMAIL_RE.test(value)) return t("auth.errEmailInvalid");
+  return null;
+}
+
 function AuthFormSwitchLink({
   locale,
   mode,
@@ -184,6 +196,11 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
 
   async function sendEmailCode() {
     if (!isLoaded || !signIn) return;
+    const emailErr = emailFieldError(email, t);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
     clearOAuthIntent();
     setError("");
     setBusy(true);
@@ -218,6 +235,10 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   async function verifyCode(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signIn) return;
+    if (!code.trim()) {
+      setError(t("auth.errCodeEmpty"));
+      return;
+    }
     setError("");
     setBusy(true);
     try {
@@ -243,8 +264,13 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   async function signInPassword(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signIn) return;
-    if (!email.trim() || !password) {
-      setError(t("auth.errEnterCredentials"));
+    const emailErr = emailFieldError(email, t);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+    if (!password) {
+      setError(t("auth.errPasswordEmpty"));
       return;
     }
     clearOAuthIntent();
@@ -297,6 +323,11 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   async function startForgot(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signIn) return;
+    const emailErr = emailFieldError(email, t);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
     clearOAuthIntent();
     setError("");
     setBusy(true);
@@ -319,6 +350,14 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
   async function finishForgot(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signIn) return;
+    if (!code.trim()) {
+      setError(t("auth.errCodeEmpty"));
+      return;
+    }
+    if (!password.trim()) {
+      setError(t("auth.errPasswordEmpty"));
+      return;
+    }
     if (password !== confirmPassword) {
       setError(t("auth.errPasswordMismatch"));
       return;
@@ -375,7 +414,10 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
               type="email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError("");
+              }}
               placeholder={t("auth.emailPh")}
               required
             />
@@ -383,7 +425,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
 
           <button
             type="button"
-            disabled={busy || !email.trim()}
+            disabled={busy}
             onClick={sendEmailCode}
             className={primaryBtn(busy)}
           >
@@ -423,11 +465,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
               required
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy || !code.trim()}
-            className={primaryBtn(busy)}
-          >
+          <button type="submit" disabled={busy} className={primaryBtn(busy)}>
             {t("auth.verify")}
           </button>
           <button
@@ -460,7 +498,10 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
               type="email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError("");
+              }}
               placeholder={t("auth.emailPh")}
               required
             />
@@ -515,16 +556,15 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
               name="email"
               autoComplete="username"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError("");
+              }}
               placeholder={t("auth.emailPh")}
               required
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy || !email.trim()}
-            className={primaryBtn(busy)}
-          >
+          <button type="submit" disabled={busy} className={primaryBtn(busy)}>
             {t("auth.resetSend")}
           </button>
           <button
@@ -593,11 +633,7 @@ export function CustomSignInForm({ locale }: { locale: Locale }) {
               required
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy || !code.trim() || !password || !confirmPassword}
-            className={primaryBtn(busy)}
-          >
+          <button type="submit" disabled={busy} className={primaryBtn(busy)}>
             {t("auth.setPassword")}
           </button>
         </form>
@@ -650,6 +686,15 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
   async function startEmailSignUp(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signUp) return;
+    const emailErr = emailFieldError(email, t);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+    if (!password.trim()) {
+      setError(t("auth.errPasswordEmpty"));
+      return;
+    }
     if (password !== confirmPassword) {
       setError(t("auth.errPasswordMismatch"));
       return;
@@ -675,6 +720,10 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
   async function verify(e: FormEvent) {
     e.preventDefault();
     if (!isLoaded || !signUp) return;
+    if (!code.trim()) {
+      setError(t("auth.errCodeEmpty"));
+      return;
+    }
     setError("");
     setBusy(true);
     try {
@@ -727,7 +776,10 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
               className={fieldClass()}
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError("");
+              }}
               placeholder={t("auth.emailPh")}
               required
             />
@@ -756,16 +808,7 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
               required
             />
           </label>
-          <button
-            type="submit"
-            disabled={
-              busy ||
-              !email.trim() ||
-              !password.trim() ||
-              !confirmPassword.trim()
-            }
-            className={primaryBtn(busy)}
-          >
+          <button type="submit" disabled={busy} className={primaryBtn(busy)}>
             {t("auth.createAccount")}
           </button>
         </form>
@@ -786,11 +829,7 @@ export function CustomSignUpForm({ locale }: { locale: Locale }) {
               required
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy || !code.trim()}
-            className={primaryBtn(busy)}
-          >
+          <button type="submit" disabled={busy} className={primaryBtn(busy)}>
             {t("auth.verify")}
           </button>
           <button

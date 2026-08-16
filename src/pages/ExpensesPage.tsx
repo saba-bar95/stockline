@@ -54,15 +54,24 @@ export function ExpensesPage() {
             title={t("expenses.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              if (!date) throw new Error(t("common.dateRequired"));
+              const gelNum = Number(gel);
+              const usdNum = Number(usd);
+              const rateNum = Number(rate);
+              const gelOk = Number.isFinite(gelNum) && gelNum > 0;
+              const usdOk = Number.isFinite(usdNum) && usdNum > 0;
+              if (!gelOk && !usdOk) {
+                throw new Error(t("common.expenseAmountRequired"));
+              }
               await api("/expenses", {
                 method: "POST",
                 body: JSON.stringify({
                   date,
                   type,
                   name: name || type,
-                  gel: Number(gel),
-                  usd: Number(usd),
-                  rate: Number(rate),
+                  gel: Number.isFinite(gelNum) ? gelNum : 0,
+                  usd: Number.isFinite(usdNum) ? usdNum : 0,
+                  rate: Number.isFinite(rateNum) ? rateNum : 0,
                 }),
               });
               setName("");
@@ -71,7 +80,7 @@ export function ExpensesPage() {
           >
             <div className="field">
               <span>{t("common.date")}</span>
-              <DateField value={date} onChange={setDate} />
+              <DateField value={date} onChange={setDate} required />
             </div>
             <div className="field">
               <span>{t("common.type")}</span>

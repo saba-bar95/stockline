@@ -217,12 +217,17 @@ export function HrPage() {
               title={t("hr.newEmployee")}
               triggerLabel={t("hr.addEmployee")}
               onSubmit={async () => {
+                if (!name.trim()) throw new Error(t("common.formInvalid"));
+                const dailyRate = Number(rate);
+                if (!Number.isFinite(dailyRate) || dailyRate < 0) {
+                  throw new Error(t("common.rateRequired"));
+                }
                 await api("/employees", {
                   method: "POST",
                   body: JSON.stringify({
-                    name,
+                    name: name.trim(),
                     position,
-                    dailyRate: Number(rate),
+                    dailyRate,
                   }),
                 });
                 setName("");
@@ -327,12 +332,17 @@ export function HrPage() {
               title={t("hr.payrollTitle")}
               triggerLabel={t("hr.addPayroll")}
               onSubmit={async () => {
+                if (!date) throw new Error(t("common.dateRequired"));
+                const amountNum = Number(amount);
+                if (!Number.isFinite(amountNum) || amountNum <= 0) {
+                  throw new Error(t("common.amountRequired"));
+                }
                 await api("/payroll", {
                   method: "POST",
                   body: JSON.stringify({
                     date,
                     employeeId,
-                    amount: Number(amount),
+                    amount: amountNum,
                   }),
                 });
                 load();
@@ -340,7 +350,7 @@ export function HrPage() {
             >
               <div className="field">
                 <span>{t("common.date")}</span>
-                <DateField value={date} onChange={setDate} />
+                <DateField value={date} onChange={setDate} required />
               </div>
               <div className="field">
                 <span>{t("common.employee")}</span>

@@ -139,16 +139,21 @@ export function ProductionPage() {
             title={t("production.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              if (!date) throw new Error(t("common.dateRequired"));
+              const qtyNum = Number(q);
+              if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+                throw new Error(t("common.qtyRequired"));
+              }
               await api("/production", {
                 method: "POST",
-                body: JSON.stringify({ date, productId, qty: Number(q) }),
+                body: JSON.stringify({ date, productId, qty: qtyNum }),
               });
               load();
             }}
           >
             <div className="field">
               <span>{t("common.date")}</span>
-              <DateField value={date} onChange={setDate} />
+              <DateField value={date} onChange={setDate} required />
             </div>
             <div className="field">
               <span>{t("common.product")}</span>

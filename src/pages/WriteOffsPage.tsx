@@ -259,13 +259,18 @@ export function WriteOffsPage() {
             title={t("writeOffs.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              if (!date) throw new Error(t("common.dateRequired"));
+              const qtyNum = Number(q);
+              if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+                throw new Error(t("common.qtyRequired"));
+              }
               await api("/write-offs", {
                 method: "POST",
                 body: JSON.stringify({
                   date,
                   kind,
                   itemId,
-                  qty: Number(q),
+                  qty: qtyNum,
                   note,
                 }),
               });
@@ -274,7 +279,7 @@ export function WriteOffsPage() {
           >
             <div className="field">
               <span>{t("common.date")}</span>
-              <DateField value={date} onChange={setDate} />
+              <DateField value={date} onChange={setDate} required />
             </div>
             <div className="field">
               <span>{t("common.type")}</span>

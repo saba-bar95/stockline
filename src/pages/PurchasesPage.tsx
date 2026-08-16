@@ -213,6 +213,11 @@ export function PurchasesPage() {
             title={t("purchases.newTitle")}
             triggerLabel={t("common.add")}
             onSubmit={async () => {
+              if (!date) throw new Error(t("common.dateRequired"));
+              const qtyNum = Number(q);
+              if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+                throw new Error(t("common.qtyRequired"));
+              }
               const unitPrice = Number(price);
               if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
                 throw new Error(t("purchases.priceRequired"));
@@ -223,7 +228,7 @@ export function PurchasesPage() {
                   date,
                   kind,
                   itemId,
-                  qty: Number(q),
+                  qty: qtyNum,
                   unitPrice,
                 }),
               });
