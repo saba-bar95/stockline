@@ -187,14 +187,18 @@ const FRESH_OAUTH_MS = 120000;
 function isGoogleProvider(provider: string) {
   return provider === "google" || provider === "oauth_google";
 }
-function externalAccountAgeMs(
-  approvedAt: number | null | undefined,
+function externalAccountCreatedMs(
+  createdAt: number | null | undefined,
 ): number | null {
-  if (approvedAt == null) return null;
-  const ms = approvedAt < 1e12 ? approvedAt * 1000 : approvedAt;
+  if (createdAt == null) return null;
+  const ms = createdAt < 1e12 ? createdAt * 1000 : createdAt;
   return Date.now() - ms;
 }
-/** Block auto-linking Google to a password-only account; remove link if just added. */
+/**
+ * Block auto-linking Google onto a password-only account.
+ * Uses createdAt only — approvedAt can refresh on every Google sign-in and
+ * would wrongly unlink a returning user (forcing Google consent again).
+ */
 export async function revokeFreshOAuthLink(userId: string): Promise<{
   blocked: boolean;
 }> {
@@ -206,18 +210,8 @@ export async function revokeFreshOAuthLink(userId: string): Promise<{
     isGoogleProvider(a.provider),
   );
   if (!google) return { blocked: false };
-  const age = externalAccountAgeMs(
-    (
-      google as {
-        approvedAt?: number;
-        createdAt?: number;
-      }
-    ).approvedAt ??
-      (
-        google as {
-          createdAt?: number;
-        }
-      ).createdAt,
+  const age = externalAccountCreatedMs(
+    (google as { createdAt?: number }).createdAt,
   );
   if (age == null || age > FRESH_OAUTH_MS) return { blocked: false };
   await client.users.deleteUserExternalAccount({

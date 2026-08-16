@@ -79,6 +79,8 @@ export function SsoCallbackPage() {
         }
 
         if (oauthIntent === "sign-in" && userId) {
+          // Only undo a brand-new Google link on password accounts (takeover guard).
+          // Established Google users must keep their bond across sign-out / sign-in.
           const token = await clerk.session?.getToken();
           if (token) {
             const res = await fetch("/api/auth/revoke-fresh-oauth", {
